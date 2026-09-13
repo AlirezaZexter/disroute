@@ -1,0 +1,14 @@
+node_modules/
+dist/
+src-tauri/target/
+.idea/
+.vscode/
+*.log
+.env
+.env.*
+!/.env.example
+work/
+outputs/
+src-tauri/binaries/*.exe
+src-tauri/binaries/*.dll
+
