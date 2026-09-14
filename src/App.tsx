@@ -32,6 +32,12 @@ function App() {
   const [appStatus, setAppStatus] = useState(emptyStatus);
   const [busy, setBusy] = useState(false);
   const connected = appStatus.status === "connected";
+  const statusTitle = {
+    disconnected: "آمادهٔ اتصال",
+    connecting: "در حال اتصال",
+    connected: "Discord متصل است",
+    error: "خطای اتصال",
+  }[appStatus.status];
 
   useEffect(() => {
     getStatus().then(setAppStatus).catch((error: unknown) => {
@@ -82,7 +88,7 @@ function App() {
         <div className="status-orb"><span /></div>
         <div className="status-copy">
           <span className="eyebrow">وضعیت اتصال</span>
-          <h2>{connected ? "Discord متصل است" : appStatus.status === "connecting" ? "در حال اتصال" : "آمادهٔ اتصال"}</h2>
+          <h2>{statusTitle}</h2>
           <p>{appStatus.message}</p>
         </div>
         <div className="route-map" aria-label="مسیر شبکه">
@@ -144,4 +150,3 @@ function App() {
 }
 
 export default App;
-
