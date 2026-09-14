@@ -16,6 +16,19 @@ impl EngineManager {
         if let Ok(path) = std::env::var("DISROUTE_ENGINE_DIR") {
             return Ok(PathBuf::from(path));
         }
+
+        // Portable distributions keep both engines beside DisRoute.exe.
+        // Prefer that directory when it exists, while retaining AppData as the
+        // development/installed-build fallback.
+        if let Ok(executable) = std::env::current_exe() {
+            if let Some(parent) = executable.parent() {
+                let portable_engine = parent.join("engine");
+                if portable_engine.is_dir() {
+                    return Ok(portable_engine);
+                }
+            }
+        }
+
         Ok(app
             .path()
             .app_local_data_dir()

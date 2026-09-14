@@ -23,7 +23,7 @@ npm run test
 npm run tauri dev
 ```
 
-For local engine testing, place the ProxiFyre payload, `sing-box.exe`, and required dependencies in `%LOCALAPPDATA%\app.disroute.desktop\engine`, or set `DISROUTE_ENGINE_DIR` to that directory. Windows Packet Filter must also be installed. Run DisRoute as Administrator when starting the network engine.
+For a portable build, place the ProxiFyre payload, `sing-box.exe`, and required dependencies in an `engine` directory beside `DisRoute.exe`. For local engine testing, the fallback path is `%LOCALAPPDATA%\app.disroute.desktop\engine`, or set `DISROUTE_ENGINE_DIR` explicitly. Windows Packet Filter must also be installed. Run DisRoute as Administrator when starting the network engine.
 
 ## Security posture
 
