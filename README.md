@@ -1,8 +1,22 @@
 # DisRoute
 
-DisRoute is a Windows desktop utility that routes only Discord traffic through a user-provided SOCKS5 proxy. Games, browsers, launchers, and other applications remain on the normal connection.
+DisRoute is a Persian-first Windows desktop utility that routes Discord through your own VLESS server. Other applications are not added to its routing rules. Built with Tauri, Rust, React and Motion; independent of Discord.
 
 > Early development preview. Do not rely on this build for privacy or leak prevention yet.
+
+## Download / دانلود
+
+Windows builds, once published, are under [Releases](https://github.com/AlirezaZexter/disroute/releases). Download `DisRoute-<version>-windows-x64.zip`, not “Source code.zip”. Extract it fully and read [راهنمای شروع](docs/START-HERE-FA.md).
+
+Each friend enters their own VLESS link. Share only the original release ZIP, never a used engine folder or AppData. Windows x64, WebView2, Visual C++ runtime and Windows Packet Filter are required. The package includes the official prerequisite installer; setup remains user-controlled.
+
+## New in 0.2
+
+- Windows DPAPI-encrypted profile storage, automatic restore, opt-out and confirmed deletion.
+- Shared-layout navigation, status crossfade, keyboard access and reduced-motion support.
+- Close-to-tray, reopen from the tray icon and explicit disconnect-and-exit; hidden engine consoles.
+- Runtime VLESS files separated from the shareable program folder.
+- Versioned ZIP packaging, pinned engine checksums and GitHub release workflow.
 
 ## Architecture
 
@@ -18,7 +32,7 @@ The UI is built with Tauri 2, React, and TypeScript. The native controller is Ru
 Prerequisites: Node.js 24+, Rust MSVC, Microsoft C++ Build Tools, and WebView2.
 
 ```powershell
-npm install
+npm ci
 npm run test
 npm run tauri dev
 ```
@@ -38,16 +52,24 @@ For a portable build, place the ProxiFyre payload, `sing-box.exe`, and required 
 - Discord's own `Update.exe` is matched by its `\\Discord\\Update.exe` path fragment; unrelated updater processes remain direct.
 - On connect, two inbound Windows Firewall rules scoped to the bundled `ProxiFyre.exe` are created or updated for TCP and UDP.
 - Startup verifies HTTPS 200 responses from the Discord Gateway API and update manifest over VLESS. A running tunnel does not prove voice connectivity.
-- Private-IP LAN bypass is disabled for the Discord-only process rules because ISP DNS may return a private block-page address. TLS/HTTP sniffing restores a fixed list of Discord hostnames before sending them through VLESS. Unknown names and encrypted ClientHello are not covered by this recovery.
-- VLESS links and UUIDs are never written to DisRoute's saved profile. The engine currently requires a temporary plaintext runtime configuration; this is tracked for hardening before a stable release.
+- Private-IP LAN bypass is disabled for Discord because ISP DNS may return a block-page address. Fixed-name recovery plus a loopback SOCKS bridge recover dynamic voice SNI. See [voice routing limitations](VOICE_ROUTING.md). ECH and unrecognized voice TLS ports are not covered.
+- Saved profiles are encrypted with Windows DPAPI in `%LOCALAPPDATA%/app.disroute.desktop/profile.dpapi`, bound to the current Windows account. No browser localStorage is used. This does not protect against malware acting as that user or Administrator.
+- sing-box requires a temporary plaintext configuration under AppData/runtime. Normal shutdown removes it; a crash can leave it behind. ProxiFyre's non-secret routing config and logs remain beside its executable. Older 0.1.x builds wrote VLESS runtime configuration beside the engine; never share those used folders.
 - TLS certificate validation is enabled when SOCKS5-over-TLS is selected. Insecure certificate bypass is not exposed.
-- Release automation and engine checksum pinning are required before public distribution.
+- Packaging downloads version-pinned engines and verifies SHA256. Releases are unsigned previews; actual two-way voice testing and clean-machine prerequisite validation are required before a stable release.
+- Routing separation does not eliminate competition for shared bandwidth.
+
+## Release workflow
+
+Run `npm run build:portable`, then `./scripts/package-portable.ps1`. For a custom Cargo target directory, pass `-Executable <absolute-exe-path>`. Only clean engine archive payloads are packaged; used runtime folders are never copied. Existing versioned archives are not overwritten.
+
+CI tests main and pull requests. Pushing a matching `v<package-version>` tag builds and publishes a prerelease ZIP with checksum. Manual workflow runs upload Actions artifacts only. See [release checklist](docs/RELEASING.md).
 
 ## Roadmap
 
 - Verified engine/downloader and prerequisite setup
 - UAC relaunch and background service lifecycle
-- Windows Credential Manager integration
+- Further runtime-secret hardening
 - Connection test, Discord detection, logs with secret redaction
 - Signed NSIS installer and GitHub Releases
 - English and Persian localization

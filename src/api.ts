@@ -10,12 +10,25 @@ const browserFallback: AppStatus = {
 
 const isTauri = () => "__TAURI_INTERNALS__" in window;
 
+export async function hideToTray(): Promise<void> {
+  if (!isTauri()) throw new Error("رفتن کنار ساعت فقط در برنامهٔ ویندوز در دسترس است.");
+  await invoke("hide_to_tray");
+}
+
 export async function getStatus(): Promise<AppStatus> {
   return isTauri() ? invoke<AppStatus>("get_status") : browserFallback;
 }
 
 export async function saveProfile(profile: ProxyProfile): Promise<void> {
-  if (isTauri()) await invoke("save_profile", { profile });
+  if (!isTauri()) throw new Error("ذخیره امن فقط در برنامهٔ ویندوز در دسترس است.");
+  await invoke("save_profile", { profile });
+}
+
+export async function loadProfile(): Promise<ProxyProfile | null> {
+  return isTauri() ? invoke("load_profile") : null;
+}
+export async function forgetProfile(): Promise<void> {
+  if (isTauri()) await invoke("forget_profile");
 }
 
 export async function connect(profile: ProxyProfile): Promise<AppStatus> {
@@ -27,4 +40,3 @@ export async function disconnect(): Promise<AppStatus> {
   if (!isTauri()) return browserFallback;
   return invoke<AppStatus>("stop_tunnel");
 }
-

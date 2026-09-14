@@ -11,4 +11,8 @@ work/
 outputs/
 src-tauri/binaries/*.exe
 src-tauri/binaries/*.dll
-
+*.dpapi
+*.dpapi.pending
+**/sing-box.json
+**/app-config.json
+**/profile.json

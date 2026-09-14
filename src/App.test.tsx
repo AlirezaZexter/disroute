@@ -17,6 +17,7 @@ describe("DisRoute dashboard", () => {
 
   it("announces preview connection failures with text instead of color alone", async () => {
     render(<App />);
+    await waitFor(() => expect(screen.getByPlaceholderText("vless://uuid@server:443?...")).toBeEnabled());
     fireEvent.change(screen.getByPlaceholderText("vless://uuid@server:443?..."), {
       target: { value: "vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls" },
     });

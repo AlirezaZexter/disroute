@@ -7,11 +7,22 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
+fn hidden_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    command
+}
+
 #[derive(Default)]
 pub struct EngineManager {
     voice_proxy: Option<crate::voice_proxy::VoiceProxy>,
     proxifyre: Option<Child>,
     sing_box: Option<Child>,
+    runtime_dir: Option<PathBuf>,
 }
 
 impl EngineManager {
@@ -47,6 +58,9 @@ impl EngineManager {
             self.voice_proxy.take();
             stop_child(&mut self.proxifyre);
             stop_child(&mut self.sing_box);
+            if let Some(dir) = &self.runtime_dir {
+                let _ = std::fs::remove_file(dir.join("sing-box.json"));
+            }
         }
         let engine_ready = self
             .engine_dir(app)
@@ -73,6 +87,7 @@ impl EngineManager {
         let engine_dir = self.engine_dir(app)?;
         let proxifyre_exe = engine_dir.join("ProxiFyre.exe");
         let sing_box_exe = engine_dir.join("sing-box.exe");
+        let proxy_config_path = engine_dir.join("app-config.json");
         if !proxifyre_exe.is_file() || !sing_box_exe.is_file() {
             return Err(format!(
                 "فایل‌های ProxiFyre.exe و sing-box.exe باید در {} باشند.",
@@ -86,16 +101,25 @@ impl EngineManager {
             );
         }
         ensure_firewall_rules(&proxifyre_exe)?;
+        // Keep runtime secrets outside the portable/shareable application folder.
+        let engine_dir = app
+            .path()
+            .app_local_data_dir()
+            .map_err(|e| e.to_string())?
+            .join("runtime");
+        std::fs::create_dir_all(&engine_dir).map_err(|e| e.to_string())?;
+        self.runtime_dir = Some(engine_dir.clone());
         let proxy_config =
             serde_json::to_string_pretty(&profile.proxifyre_config()).map_err(|e| e.to_string())?;
         let tunnel_config =
             serde_json::to_string_pretty(&profile.sing_box_config()?).map_err(|e| e.to_string())?;
-        std::fs::write(engine_dir.join("app-config.json"), proxy_config)
+        // ProxiFyre locates this non-secret routing file beside its executable.
+        std::fs::write(proxy_config_path, proxy_config)
             .map_err(|e| format!("ذخیرهٔ تنظیمات ProxiFyre ناموفق بود: {e}"))?;
         std::fs::write(engine_dir.join("sing-box.json"), tunnel_config)
             .map_err(|e| format!("ذخیرهٔ تنظیمات sing-box ناموفق بود: {e}"))?;
 
-        let check = Command::new(&sing_box_exe)
+        let check = hidden_command(&sing_box_exe)
             .current_dir(&engine_dir)
             .args(["check", "-c", "sing-box.json"])
             .output()
@@ -107,7 +131,7 @@ impl EngineManager {
             ));
         }
         self.sing_box = Some(
-            Command::new(&sing_box_exe)
+            hidden_command(&sing_box_exe)
                 .current_dir(&engine_dir)
                 .args(["run", "-c", "sing-box.json"])
                 .stdin(Stdio::null())
@@ -131,7 +155,7 @@ impl EngineManager {
                 ));
             }
         };
-        let child = match Command::new(&proxifyre_exe)
+        let child = match hidden_command(&proxifyre_exe)
             .current_dir(&engine_dir)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -176,7 +200,7 @@ impl EngineManager {
         self.voice_proxy.take();
         stop_child(&mut self.proxifyre);
         stop_child(&mut self.sing_box);
-        if let Ok(engine_dir) = self.engine_dir(app) {
+        if let Some(engine_dir) = &self.runtime_dir {
             let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
         }
         Ok(self.status(app))
@@ -188,6 +212,9 @@ impl Drop for EngineManager {
         self.voice_proxy.take();
         stop_child(&mut self.proxifyre);
         stop_child(&mut self.sing_box);
+        if let Some(dir) = &self.runtime_dir {
+            let _ = std::fs::remove_file(dir.join("sing-box.json"));
+        }
     }
 }
 
@@ -256,7 +283,7 @@ fn probe_vless() -> Result<(), String> {
         "https://discord.com/api/v10/gateway",
         "https://updates.discord.com/distributions/app/manifests/latest?channel=stable&platform=win&arch=x64",
     ] {
-        let response = Command::new(&curl)
+        let response = hidden_command(&curl)
             .args(["--proxy", "socks5h://127.0.0.1:2080", "--connect-timeout", "5",
                 "--max-time", "15", "--silent", "--output", "NUL", "--write-out", "%{http_code}", endpoint])
             .output().map_err(|_| "اجرای تست HTTPS ممکن نشد؛ curl ویندوز در دسترس نیست.")?;
@@ -279,7 +306,7 @@ fn ensure_firewall_rules(program: &std::path::Path) -> Result<(), String> {
         let name_arg = format!("name={name}");
         let program_arg = format!("program={program}");
         let protocol_arg = format!("protocol={protocol}");
-        let exists = Command::new("netsh.exe")
+        let exists = hidden_command("netsh.exe")
             .args(["advfirewall", "firewall", "show", "rule", &name_arg])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -299,7 +326,7 @@ fn ensure_firewall_rules(program: &std::path::Path) -> Result<(), String> {
             "profile=any",
             &protocol_arg,
         ]);
-        let result = Command::new("netsh.exe")
+        let result = hidden_command("netsh.exe")
             .args(args)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
