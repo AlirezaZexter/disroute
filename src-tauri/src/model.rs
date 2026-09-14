@@ -70,7 +70,7 @@ impl ProxyProfile {
                 "type": "mixed",
                 "tag": "discord-local",
                 "listen": "127.0.0.1",
-                "listen_port": 2080,
+                "listen_port": 2081,
                 "set_system_proxy": false
             }],
             "outbounds": [outbound],
@@ -211,6 +211,12 @@ mod tests {
     fn recovers_discord_names_from_poisoned_dns() {
         assert_eq!(profile().proxifyre_config()["bypassLan"], false);
         let config = profile().sing_box_config().unwrap();
+        assert_eq!(config["inbounds"][0]["listen_port"], 2081);
+        assert_eq!(config["inbounds"][0]["listen"], "127.0.0.1");
+        assert_eq!(
+            profile().proxifyre_config()["proxies"][0]["socks5ProxyEndpoint"],
+            "127.0.0.1:2080"
+        );
         let rules = config["route"]["rules"].as_array().unwrap();
         assert_eq!(rules[0]["action"], "sniff");
         for domain in ["discord.com", "updates.discord.com", "gateway.discord.gg"] {

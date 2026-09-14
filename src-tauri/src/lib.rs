@@ -1,5 +1,6 @@
 mod engine;
 mod model;
+mod voice_proxy;
 
 use engine::EngineManager;
 use model::{AppStatus, ProxyProfile};

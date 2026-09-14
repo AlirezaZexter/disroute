@@ -9,6 +9,7 @@ use tauri::{AppHandle, Manager};
 
 #[derive(Default)]
 pub struct EngineManager {
+    voice_proxy: Option<crate::voice_proxy::VoiceProxy>,
     proxifyre: Option<Child>,
     sing_box: Option<Child>,
 }
@@ -41,8 +42,9 @@ impl EngineManager {
     pub fn status(&mut self, app: &AppHandle) -> AppStatus {
         let proxy_running = child_running(&mut self.proxifyre);
         let tunnel_running = child_running(&mut self.sing_box);
-        let running = proxy_running && tunnel_running;
-        if proxy_running != tunnel_running {
+        let running = proxy_running && tunnel_running && self.voice_proxy.is_some();
+        if !running {
+            self.voice_proxy.take();
             stop_child(&mut self.proxifyre);
             stop_child(&mut self.sing_box);
         }
@@ -65,7 +67,7 @@ impl EngineManager {
     }
 
     pub fn start(&mut self, app: &AppHandle, profile: &ProxyProfile) -> Result<AppStatus, String> {
-        if self.proxifyre.is_some() || self.sing_box.is_some() {
+        if self.proxifyre.is_some() || self.sing_box.is_some() || self.voice_proxy.is_some() {
             self.stop(app)?;
         }
         let engine_dir = self.engine_dir(app)?;
@@ -119,6 +121,16 @@ impl EngineManager {
             return Err("sing-box بلافاصله متوقف شد.".into());
         }
 
+        self.voice_proxy = match crate::voice_proxy::VoiceProxy::start(2080, 2081) {
+            Ok(proxy) => Some(proxy),
+            Err(error) => {
+                stop_child(&mut self.sing_box);
+                let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
+                return Err(format!(
+                    "راه‌اندازی مسیر وویس روی پورت ۲۰۸۰ ناموفق بود: {error}"
+                ));
+            }
+        };
         let child = match Command::new(&proxifyre_exe)
             .current_dir(&engine_dir)
             .stdin(Stdio::null())
@@ -128,6 +140,7 @@ impl EngineManager {
         {
             Ok(child) => child,
             Err(error) => {
+                self.voice_proxy.take();
                 stop_child(&mut self.sing_box);
                 let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
                 return Err(format!("اجرای موتور ناموفق بود: {error}"));
@@ -142,6 +155,7 @@ impl EngineManager {
             .flatten()
         {
             self.proxifyre = None;
+            self.voice_proxy.take();
             stop_child(&mut self.sing_box);
             return Err(format!(
                 "موتور بلافاصله متوقف شد (کد خروج {code}). درایور و گزارش‌ها را بررسی کنید."
@@ -149,6 +163,7 @@ impl EngineManager {
         }
 
         if let Err(error) = probe_vless() {
+            self.voice_proxy.take();
             stop_child(&mut self.proxifyre);
             stop_child(&mut self.sing_box);
             let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
@@ -158,6 +173,7 @@ impl EngineManager {
     }
 
     pub fn stop(&mut self, app: &AppHandle) -> Result<AppStatus, String> {
+        self.voice_proxy.take();
         stop_child(&mut self.proxifyre);
         stop_child(&mut self.sing_box);
         if let Ok(engine_dir) = self.engine_dir(app) {
@@ -169,6 +185,7 @@ impl EngineManager {
 
 impl Drop for EngineManager {
     fn drop(&mut self) {
+        self.voice_proxy.take();
         stop_child(&mut self.proxifyre);
         stop_child(&mut self.sing_box);
     }
