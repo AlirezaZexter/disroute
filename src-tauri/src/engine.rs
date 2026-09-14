@@ -55,7 +55,7 @@ impl EngineManager {
             engine_ready,
             is_elevated: is_elevated(),
             message: if running {
-                "فقط پردازش‌های Discord از پروکسی عبور می‌کنند.".into()
+                "موتور فعال است؛ پاسخ HTTPS هنگام اتصال بررسی شد. Discord را باز کنید.".into()
             } else if engine_ready {
                 "موتور آماده است؛ مشخصات اتصال را وارد کنید.".into()
             } else {
@@ -230,6 +230,22 @@ fn probe_vless() -> Result<(), String> {
             "تونل درخواست آزمایشی را رد کرد (کد SOCKS {}).",
             response[1]
         ));
+    }
+    drop(stream);
+    let curl = PathBuf::from(std::env::var_os("SystemRoot").ok_or("مسیر Windows یافت نشد.")?)
+        .join("System32")
+        .join("curl.exe");
+    for endpoint in [
+        "https://discord.com/api/v10/gateway",
+        "https://updates.discord.com/distributions/app/manifests/latest?channel=stable&platform=win&arch=x64",
+    ] {
+        let response = Command::new(&curl)
+            .args(["--proxy", "socks5h://127.0.0.1:2080", "--connect-timeout", "5",
+                "--max-time", "15", "--silent", "--output", "NUL", "--write-out", "%{http_code}", endpoint])
+            .output().map_err(|_| "اجرای تست HTTPS ممکن نشد؛ curl ویندوز در دسترس نیست.")?;
+        if !response.status.success() || response.stdout != b"200" {
+            return Err("پاسخ HTTPS معتبر از Discord یا سرور آپدیت دریافت نشد؛ سرور VLESS را بررسی کنید.".into());
+        }
     }
     Ok(())
 }

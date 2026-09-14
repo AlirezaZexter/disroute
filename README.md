@@ -37,7 +37,8 @@ For a portable build, place the ProxiFyre payload, `sing-box.exe`, and required 
 - Only `Discord.exe`, `DiscordCanary.exe`, and `DiscordPTB.exe` are included in generated routing rules.
 - Discord's own `Update.exe` is matched by its `\\Discord\\Update.exe` path fragment; unrelated updater processes remain direct.
 - On connect, two inbound Windows Firewall rules scoped to the bundled `ProxiFyre.exe` are created or updated for TCP and UDP.
-- Connected status is returned only after a real SOCKS5 CONNECT probe reaches `discord.com:443` through VLESS.
+- Startup verifies HTTPS 200 responses from the Discord Gateway API and update manifest over VLESS. A running tunnel does not prove voice connectivity.
+- Private-IP LAN bypass is disabled for the Discord-only process rules because ISP DNS may return a private block-page address. TLS/HTTP sniffing restores a fixed list of Discord hostnames before sending them through VLESS. Unknown names and encrypted ClientHello are not covered by this recovery.
 - VLESS links and UUIDs are never written to DisRoute's saved profile. The engine currently requires a temporary plaintext runtime configuration; this is tracked for hardening before a stable release.
 - TLS certificate validation is enabled when SOCKS5-over-TLS is selected. Insecure certificate bypass is not exposed.
 - Release automation and engine checksum pinning are required before public distribution.

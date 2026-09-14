@@ -19,7 +19,7 @@ impl ProxyProfile {
     pub fn proxifyre_config(&self) -> serde_json::Value {
         serde_json::json!({
             "logLevel": "Info",
-            "bypassLan": true,
+            "bypassLan": false,
             "proxies": [{
                 "appNames": [
                     "Discord.exe",
@@ -43,6 +43,27 @@ impl ProxyProfile {
 
     pub fn sing_box_config(&self) -> Result<serde_json::Value, String> {
         let outbound = parse_vless_link(&self.vless_link)?;
+        // ISP DNS may return a private block-page IP. Recover only known
+        // Discord TLS names, then let the VLESS server resolve the real host.
+        let mut rules = vec![serde_json::json!({
+            "network": "tcp", "action": "sniff", "sniffer": ["tls", "http"], "timeout": "1s"
+        })];
+        for domain in [
+            "discord.com",
+            "discordapp.com",
+            "updates.discord.com",
+            "stable.discord.com",
+            "canary.discord.com",
+            "ptb.discord.com",
+            "gateway.discord.gg",
+            "cdn.discordapp.com",
+            "media.discordapp.net",
+            "images-ext-1.discordapp.net",
+            "images-ext-2.discordapp.net",
+        ] {
+            rules.push(serde_json::json!({ "domain": [domain], "action": "route",
+                "outbound": "vless-out", "override_address": domain }));
+        }
         Ok(serde_json::json!({
             "log": { "level": "info", "timestamp": true },
             "inbounds": [{
@@ -53,7 +74,7 @@ impl ProxyProfile {
                 "set_system_proxy": false
             }],
             "outbounds": [outbound],
-            "route": { "final": "vless-out", "auto_detect_interface": true }
+            "route": { "final": "vless-out", "auto_detect_interface": true, "rules": rules }
         }))
     }
 }
@@ -184,6 +205,21 @@ mod tests {
         let mut invalid = profile();
         invalid.vless_link = "https://example.com".into();
         assert!(invalid.validate().is_err());
+    }
+
+    #[test]
+    fn recovers_discord_names_from_poisoned_dns() {
+        assert_eq!(profile().proxifyre_config()["bypassLan"], false);
+        let config = profile().sing_box_config().unwrap();
+        let rules = config["route"]["rules"].as_array().unwrap();
+        assert_eq!(rules[0]["action"], "sniff");
+        for domain in ["discord.com", "updates.discord.com", "gateway.discord.gg"] {
+            assert!(rules
+                .iter()
+                .any(|rule| rule["domain"] == serde_json::json!([domain])
+                    && rule["override_address"] == domain
+                    && rule["outbound"] == "vless-out"));
+        }
     }
 
     #[test]

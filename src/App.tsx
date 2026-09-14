@@ -31,7 +31,7 @@ function App() {
   const statusTitle = {
     disconnected: "آمادهٔ اتصال",
     connecting: "در حال اتصال",
-    connected: "Discord متصل است",
+    connected: "تونل آماده است",
     error: "خطای اتصال",
   }[appStatus.status];
 
