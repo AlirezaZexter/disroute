@@ -120,7 +120,7 @@ function App() {
           <h1>DisRoute</h1>
           <p>اتصال VLESS برای Discord</p>
         </div>
-        <span className="version">WINDOWS · 0.2.2 PREVIEW</span>
+        <span className="version">WINDOWS · 0.2.3 PREVIEW</span>
         <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
       </header>
 
