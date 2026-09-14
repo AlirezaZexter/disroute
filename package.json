@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "tauri": "tauri",
+    "build:portable": "tauri build --no-bundle --features custom-protocol",
     "check": "npm run test && npm run build && cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
@@ -30,4 +31,3 @@
     "vitest": "^5.0.0"
   }
 }
-

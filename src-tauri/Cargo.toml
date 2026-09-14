@@ -22,3 +22,8 @@ url = "2"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Threading"] }
+
+[features]
+# Tauri CLI enables this feature for production builds so the bundled web
+# assets use the app protocol instead of the development localhost URL.
+custom-protocol = ["tauri/custom-protocol"]
