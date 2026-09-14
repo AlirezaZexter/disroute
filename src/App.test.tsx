@@ -11,6 +11,8 @@ describe("DisRoute dashboard", () => {
     expect(screen.getByRole("heading", { name: "فقط Discord" })).toBeInTheDocument();
     expect(screen.getByText("بازی‌ها")).toBeInTheDocument();
     expect(screen.getAllByText("Direct")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "مشخصات VLESS" })).toBeInTheDocument();
+    expect(screen.getByText(/مجوز Firewall محدود/)).toBeInTheDocument();
   });
 
   it("announces preview connection failures with text instead of color alone", async () => {
@@ -20,5 +22,6 @@ describe("DisRoute dashboard", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "اتصال Discord" }));
     await waitFor(() => expect(screen.getByRole("heading", { name: "خطای اتصال" })).toBeInTheDocument());
+    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 });

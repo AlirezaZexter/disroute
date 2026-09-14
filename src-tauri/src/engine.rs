@@ -1,4 +1,6 @@
 use crate::model::{AppStatus, ProxyProfile};
+use std::io::{Read, Write};
+use std::net::{Ipv4Addr, SocketAddr, TcpStream};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::thread;
@@ -81,6 +83,7 @@ impl EngineManager {
                     .into(),
             );
         }
+        ensure_firewall_rules(&proxifyre_exe)?;
         let proxy_config =
             serde_json::to_string_pretty(&profile.proxifyre_config()).map_err(|e| e.to_string())?;
         let tunnel_config =
@@ -144,6 +147,13 @@ impl EngineManager {
                 "موتور بلافاصله متوقف شد (کد خروج {code}). درایور و گزارش‌ها را بررسی کنید."
             ));
         }
+
+        if let Err(error) = probe_vless() {
+            stop_child(&mut self.proxifyre);
+            stop_child(&mut self.sing_box);
+            let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
+            return Err(format!("آزمایش واقعی VLESS ناموفق بود: {error}"));
+        }
         Ok(self.status(app))
     }
 
@@ -179,6 +189,101 @@ fn stop_child(child: &mut Option<Child>) {
         let _ = process.kill();
         let _ = process.wait();
     }
+}
+
+fn probe_vless() -> Result<(), String> {
+    let address = SocketAddr::from((Ipv4Addr::LOCALHOST, 2080));
+    let mut stream = TcpStream::connect_timeout(&address, Duration::from_secs(3))
+        .map_err(|_| "موتور SOCKS محلی روی پورت ۲۰۸۰ پاسخ نمی‌دهد.")?;
+    stream
+        .set_read_timeout(Some(Duration::from_secs(12)))
+        .map_err(|e| e.to_string())?;
+    stream
+        .set_write_timeout(Some(Duration::from_secs(5)))
+        .map_err(|e| e.to_string())?;
+
+    stream
+        .write_all(&[0x05, 0x01, 0x00])
+        .map_err(|_| "ارسال handshake به SOCKS ناموفق بود.")?;
+    let mut greeting = [0u8; 2];
+    stream
+        .read_exact(&mut greeting)
+        .map_err(|_| "پاسخ handshake از SOCKS دریافت نشد.")?;
+    if greeting != [0x05, 0x00] {
+        return Err("موتور SOCKS روش اتصال بدون رمز را نپذیرفت.".into());
+    }
+
+    let host = b"discord.com";
+    let mut request = vec![0x05, 0x01, 0x00, 0x03, host.len() as u8];
+    request.extend_from_slice(host);
+    request.extend_from_slice(&443u16.to_be_bytes());
+    stream
+        .write_all(&request)
+        .map_err(|_| "درخواست آزمایشی Discord ارسال نشد.")?;
+
+    let mut response = [0u8; 4];
+    stream
+        .read_exact(&mut response)
+        .map_err(|_| "سرور VLESS در زمان مقرر پاسخ نداد.")?;
+    if response[0] != 0x05 || response[1] != 0x00 {
+        return Err(format!(
+            "تونل درخواست آزمایشی را رد کرد (کد SOCKS {}).",
+            response[1]
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn ensure_firewall_rules(program: &std::path::Path) -> Result<(), String> {
+    let program = program
+        .to_str()
+        .ok_or("مسیر ProxiFyre برای Firewall معتبر نیست.")?;
+    for (name, protocol) in [
+        ("DisRoute ProxiFyre TCP", "TCP"),
+        ("DisRoute ProxiFyre UDP", "UDP"),
+    ] {
+        let name_arg = format!("name={name}");
+        let program_arg = format!("program={program}");
+        let protocol_arg = format!("protocol={protocol}");
+        let exists = Command::new("netsh.exe")
+            .args(["advfirewall", "firewall", "show", "rule", &name_arg])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|status| status.success())
+            .unwrap_or(false);
+        let operation = if exists { "set" } else { "add" };
+        let mut args = vec!["advfirewall", "firewall", operation, "rule", &name_arg];
+        if exists {
+            args.push("new");
+        }
+        args.extend([
+            "dir=in",
+            "action=allow",
+            &program_arg,
+            "enable=yes",
+            "profile=any",
+            &protocol_arg,
+        ]);
+        let result = Command::new("netsh.exe")
+            .args(args)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map_err(|e| format!("اجرای تنظیم Firewall ناموفق بود: {e}"))?;
+        if !result.success() {
+            return Err(format!(
+                "ساخت مجوز Firewall برای {protocol} ناموفق بود. برنامه را با Run as administrator اجرا کنید."
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn ensure_firewall_rules(_program: &std::path::Path) -> Result<(), String> {
+    Ok(())
 }
 
 #[cfg(windows)]

@@ -80,7 +80,11 @@ function App() {
         <span className="version">نسخهٔ آزمایشی ۰.۱</span>
       </header>
 
-      <section className={`status-card status-${appStatus.status}`} aria-live="polite">
+      <section
+        className={`status-card status-${appStatus.status}`}
+        role={appStatus.status === "error" ? "alert" : "status"}
+        aria-live={appStatus.status === "error" ? "assertive" : "polite"}
+      >
         <div className="status-orb"><span /></div>
         <div className="status-copy">
           <span className="eyebrow">وضعیت اتصال</span>
@@ -95,7 +99,7 @@ function App() {
       <div className="content-grid">
         <form className="panel" onSubmit={handleSubmit}>
           <div className="panel-heading">
-            <div><span className="eyebrow">پروفایل اتصال</span><h2>مشخصات SOCKS5</h2></div>
+            <div><span className="eyebrow">پروفایل اتصال</span><h2>مشخصات VLESS</h2></div>
             <span className="protocol-pill">VLESS</span>
           </div>
 
@@ -128,7 +132,7 @@ function App() {
           </ul>
           <div className="requirement">
             <strong>{appStatus.engineReady ? "موتور آماده است" : "موتور شبکه نصب نیست"}</strong>
-            <p>برای اجرای واقعی، sing-box، موتور مسیریابی پردازشی و درایور Windows Packet Filter لازم‌اند.</p>
+            <p>در اولین اتصال، DisRoute یک مجوز Firewall محدود به موتور خودش می‌سازد و سپس مسیر VLESS را واقعاً آزمایش می‌کند.</p>
           </div>
         </aside>
       </div>

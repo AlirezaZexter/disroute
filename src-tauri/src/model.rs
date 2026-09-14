@@ -21,7 +21,12 @@ impl ProxyProfile {
             "logLevel": "Info",
             "bypassLan": true,
             "proxies": [{
-                "appNames": ["Discord.exe", "DiscordCanary.exe", "DiscordPTB.exe"],
+                "appNames": [
+                    "Discord.exe",
+                    "DiscordCanary.exe",
+                    "DiscordPTB.exe",
+                    "\\Discord\\Update.exe"
+                ],
                 "socks5ProxyEndpoint": "127.0.0.1:2080",
                 "username": "",
                 "password": "",
@@ -163,9 +168,11 @@ mod tests {
     fn generated_config_routes_only_discord_variants() {
         let config = profile().proxifyre_config();
         let apps = config["proxies"][0]["appNames"].as_array().unwrap();
-        assert!(apps
-            .iter()
-            .all(|name| name.as_str().unwrap().starts_with("Discord")));
+        assert!(apps.iter().all(|name| {
+            let name = name.as_str().unwrap();
+            name.starts_with("Discord") || name == "\\Discord\\Update.exe"
+        }));
+        assert!(apps.contains(&serde_json::json!("\\Discord\\Update.exe")));
         assert_eq!(
             config["proxies"][0]["supportedProtocols"],
             serde_json::json!(["TCP", "UDP"])
