@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { connect, disconnect, getStatus, saveProfile, loadProfile, forgetProfile, hideToTray } from "./api";
-import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion, useIsPresent } from "motion/react";
 import type { AppStatus, ProxyProfile } from "./types";
 
 const initialProfile: ProxyProfile = {
@@ -22,6 +22,11 @@ function ShieldIcon() {
       <path d="m8.8 12 2 2 4.4-4.5" />
     </svg>
   );
+}
+
+function StatusHeading({ title, reduced }: { title: string; reduced: boolean }) {
+  const present = useIsPresent();
+  return <motion.h2 aria-hidden={!present} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : .18 }}>{title}</motion.h2>;
 }
 
 function App() {
@@ -115,7 +120,7 @@ function App() {
           <h1>DisRoute</h1>
           <p>مسیر اختصاصی Discord</p>
         </div>
-        <span className="version">WINDOWS · 0.2.0 PREVIEW</span>
+        <span className="version">WINDOWS · 0.2.1 PREVIEW</span>
         <button className="text-button" type="button" title="اتصال فعال می‌ماند؛ از آیکون کنار ساعت دوباره باز کنید" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>کنار ساعت</button>
       </header>
 
@@ -132,7 +137,7 @@ function App() {
         <div className="status-orb"><span /></div>
         <div className="status-copy">
           <span className="eyebrow">وضعیت اتصال</span>
-          <div className="status-title-stack"><AnimatePresence initial={false}><motion.h2 key={statusTitle} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : .18 }}>{statusTitle}</motion.h2></AnimatePresence></div>
+          <div className="status-title-stack"><AnimatePresence initial={false}><StatusHeading key={statusTitle} title={statusTitle} reduced={!!reduced} /></AnimatePresence></div>
           <p>{appStatus.message}</p>
         </div>
         <div className="status-controls"><div className="actions">

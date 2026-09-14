@@ -1,6 +1,6 @@
 [package]
 name = "disroute"
-version = "0.2.0"
+version = "0.2.1"
 description = "Discord-only network routing for Windows"
 authors = ["DisRoute contributors"]
 license = "AGPL-3.0-or-later"
@@ -17,7 +17,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 url = "2"
 
 [target.'cfg(windows)'.dependencies]

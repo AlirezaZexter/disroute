@@ -1,8 +1,9 @@
-# DisRoute 0.2.0 — Windows preview
+# DisRoute 0.2.1 — Windows preview
 
 - Windows-protected saved VLESS profiles, restore on launch, opt-out and confirmed deletion.
 - Refined Persian RTL UI with shared-layout navigation, status crossfade and reduced-motion support.
 - Close-to-tray with reopen/quit menu, and hidden network-engine console windows.
+- Explicit tray icon and Windows GUI subsystem (no separate application console).
 - Dynamic Discord voice hostname recovery and per-process TCP/UDP routing.
 - Runtime VLESS configuration separated from the shareable application folder.
 - Portable ZIP with pinned, SHA256-verified engine binaries and official prerequisite installer.
