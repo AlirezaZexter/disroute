@@ -4,11 +4,7 @@ import type { AppStatus, ProxyProfile } from "./types";
 
 const initialProfile: ProxyProfile = {
   name: "Discord",
-  endpoint: "",
-  username: "",
-  password: "",
-  useTls: false,
-  tlsServerName: "",
+  vlessLink: "",
 };
 
 const emptyStatus: AppStatus = {
@@ -100,7 +96,7 @@ function App() {
         <form className="panel" onSubmit={handleSubmit}>
           <div className="panel-heading">
             <div><span className="eyebrow">پروفایل اتصال</span><h2>مشخصات SOCKS5</h2></div>
-            <span className="protocol-pill">TCP + UDP</span>
+            <span className="protocol-pill">VLESS</span>
           </div>
 
           <label>
@@ -108,28 +104,19 @@ function App() {
             <input value={profile.name} onChange={(e) => update("name", e.target.value)} autoComplete="off" />
           </label>
           <label>
-            <span>آدرس و پورت</span>
-            <input dir="ltr" required placeholder="proxy.example.com:1080" value={profile.endpoint} onChange={(e) => update("endpoint", e.target.value)} autoComplete="off" />
-            <small>سرور باید SOCKS5 UDP ASSOCIATE را پشتیبانی کند.</small>
+            <span>لینک اتصال VLESS</span>
+            <input dir="ltr" type="password" required placeholder="vless://uuid@server:443?..." value={profile.vlessLink} onChange={(e) => update("vlessLink", e.target.value.trim())} autoComplete="off" spellCheck={false} />
+            <small>Reality، TLS و انتقال‌های TCP، WebSocket و gRPC پشتیبانی می‌شوند.</small>
           </label>
-          <div className="field-row">
-            <label><span>نام کاربری</span><input dir="ltr" value={profile.username} onChange={(e) => update("username", e.target.value)} autoComplete="username" /></label>
-            <label><span>رمز عبور</span><input dir="ltr" type="password" value={profile.password} onChange={(e) => update("password", e.target.value)} autoComplete="current-password" /></label>
-          </div>
-          <label className="toggle-row">
-            <span><strong>SOCKS5 روی TLS</strong><small>در صورت پشتیبانی سرور فعال کنید</small></span>
-            <input type="checkbox" checked={profile.useTls} onChange={(e) => update("useTls", e.target.checked)} />
-          </label>
-          {profile.useTls && <label><span>نام سرور TLS</span><input dir="ltr" required value={profile.tlsServerName} onChange={(e) => update("tlsServerName", e.target.value)} /></label>}
 
           <div className="actions">
             {connected ? (
               <button className="button button-danger" type="button" onClick={handleDisconnect} disabled={busy}>قطع اتصال</button>
             ) : (
-              <button className="button button-primary" type="submit" disabled={busy || !profile.endpoint}>{busy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
+              <button className="button button-primary" type="submit" disabled={busy || !profile.vlessLink}>{busy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
             )}
           </div>
-          <p className="privacy-note">رمز عبور در نسخهٔ فعلی ذخیره نمی‌شود و پس از بستن برنامه از حافظه پاک خواهد شد.</p>
+          <p className="privacy-note">لینک VLESS و UUID در نسخهٔ فعلی ذخیره نمی‌شوند و پس از بستن برنامه از حافظه پاک خواهند شد.</p>
         </form>
 
         <aside className="panel side-panel">
@@ -141,7 +128,7 @@ function App() {
           </ul>
           <div className="requirement">
             <strong>{appStatus.engineReady ? "موتور آماده است" : "موتور شبکه نصب نیست"}</strong>
-            <p>برای اجرای واقعی، بستهٔ تأییدشدهٔ موتور و درایور Windows Packet Filter لازم است.</p>
+            <p>برای اجرای واقعی، sing-box، موتور مسیریابی پردازشی و درایور Windows Packet Filter لازم‌اند.</p>
           </div>
         </aside>
       </div>

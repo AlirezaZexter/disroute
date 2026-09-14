@@ -637,6 +637,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "url",
  "windows",
 ]
 

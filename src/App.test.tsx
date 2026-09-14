@@ -15,8 +15,8 @@ describe("DisRoute dashboard", () => {
 
   it("announces preview connection failures with text instead of color alone", async () => {
     render(<App />);
-    fireEvent.change(screen.getByPlaceholderText("proxy.example.com:1080"), {
-      target: { value: "127.0.0.1:1080" },
+    fireEvent.change(screen.getByPlaceholderText("vless://uuid@server:443?..."), {
+      target: { value: "vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls" },
     });
     fireEvent.click(screen.getByRole("button", { name: "اتصال Discord" }));
     await waitFor(() => expect(screen.getByRole("heading", { name: "خطای اتصال" })).toBeInTheDocument());

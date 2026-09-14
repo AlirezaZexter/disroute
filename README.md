@@ -7,11 +7,11 @@ DisRoute is a Windows desktop utility that routes only Discord traffic through a
 ## Architecture
 
 ```text
-Discord.exe ── TCP/UDP ──► ProxiFyre ── SOCKS5 ──► Proxy server
+Discord.exe ── TCP/UDP ──► ProxiFyre ──► local SOCKS5 ──► sing-box ──► VLESS server
 Everything else ─────────────────────────────────► Direct internet
 ```
 
-The UI is built with Tauri 2, React, and TypeScript. The native controller is Rust. The current engine adapter targets [ProxiFyre](https://github.com/wiresock/proxifyre), which supports per-process TCP and UDP routing on Windows.
+The UI is built with Tauri 2, React, and TypeScript. The native controller is Rust. ProxiFyre performs per-process TCP/UDP routing, while sing-box translates the local SOCKS5 connection to VLESS.
 
 ## Development
 
@@ -23,12 +23,12 @@ npm run test
 npm run tauri dev
 ```
 
-For local engine testing, place the ProxiFyre payload and its dependencies in `%LOCALAPPDATA%\app.disroute.desktop\engine`, or set `DISROUTE_ENGINE_DIR` to the payload directory. Windows Packet Filter must also be installed. Run DisRoute as Administrator when starting the network engine.
+For local engine testing, place the ProxiFyre payload, `sing-box.exe`, and required dependencies in `%LOCALAPPDATA%\app.disroute.desktop\engine`, or set `DISROUTE_ENGINE_DIR` to that directory. Windows Packet Filter must also be installed. Run DisRoute as Administrator when starting the network engine.
 
 ## Security posture
 
 - Only `Discord.exe`, `DiscordCanary.exe`, and `DiscordPTB.exe` are included in generated routing rules.
-- Proxy passwords are never written to DisRoute's saved profile. The engine currently requires a temporary plaintext runtime configuration; this is tracked for hardening before a stable release.
+- VLESS links and UUIDs are never written to DisRoute's saved profile. The engine currently requires a temporary plaintext runtime configuration; this is tracked for hardening before a stable release.
 - TLS certificate validation is enabled when SOCKS5-over-TLS is selected. Insecure certificate bypass is not exposed.
 - Release automation and engine checksum pinning are required before public distribution.
 
@@ -44,4 +44,3 @@ For local engine testing, place the ProxiFyre payload and its dependencies in `%
 ## License
 
 AGPL-3.0-or-later. Third-party components retain their respective licenses and notices.
-

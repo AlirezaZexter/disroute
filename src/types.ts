@@ -2,11 +2,7 @@ export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "er
 
 export interface ProxyProfile {
   name: string;
-  endpoint: string;
-  username: string;
-  password: string;
-  useTls: boolean;
-  tlsServerName: string;
+  vlessLink: string;
 }
 
 export interface AppStatus {
@@ -15,4 +11,3 @@ export interface AppStatus {
   isElevated: boolean;
   message: string;
 }
-
