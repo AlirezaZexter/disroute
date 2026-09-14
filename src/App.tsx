@@ -45,7 +45,7 @@ function App() {
   const statusTitle = {
     disconnected: "آمادهٔ اتصال",
     connecting: "در حال اتصال",
-    connected: "تونل آماده است",
+    connected: "متصل است",
     error: "خطای اتصال",
   }[appStatus.status];
 
@@ -69,8 +69,8 @@ function App() {
     { setProfile((current) => ({ ...current, [key]: value })); setNotice("تغییرات هنوز ذخیره نشده‌اند."); };
 
   async function persist() {
-    if (remember) { await saveProfile(profile); setSaved(true); setNotice("برای اتصال بعدی، امن در ویندوز ذخیره شد."); }
-    else { await forgetProfile(); setSaved(false); setNotice("کانفیگ فقط برای همین اجرا نگه داشته می‌شود."); }
+    if (remember) { await saveProfile(profile); setSaved(true); setNotice("کانفیگ ذخیره شد."); }
+    else { await forgetProfile(); setSaved(false); setNotice("کانفیگ ذخیره نمی‌شود."); }
   }
 
   async function handleSave() {
@@ -118,13 +118,13 @@ function App() {
         <div className="brand-mark"><ShieldIcon /></div>
         <div>
           <h1>DisRoute</h1>
-          <p>مسیر اختصاصی Discord</p>
+          <p>اتصال VLESS برای Discord</p>
         </div>
-        <span className="version">WINDOWS · 0.2.1 PREVIEW</span>
-        <button className="text-button" type="button" title="اتصال فعال می‌ماند؛ از آیکون کنار ساعت دوباره باز کنید" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>کنار ساعت</button>
+        <span className="version">WINDOWS · 0.2.2 PREVIEW</span>
+        <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
       </header>
 
-      <div className="workspace-heading"><div><span className="eyebrow">YOUR DISCORD. YOUR ROUTE.</span><h2>وصل بمان. با مسیر خودت.</h2></div><span className="local-badge">ذخیره روی همین دستگاه</span></div>
+      <div className="workspace-heading"><div><span className="eyebrow">DISROUTE</span><h2>اتصال Discord</h2></div><span className="local-badge">فقط روی این دستگاه</span></div>
       <nav className="view-switch" aria-label="بخش‌های برنامه">
         {([['connection', 'اتصال و پروفایل'], ['guide', 'راهنمای شروع']] as const).map(([id, label]) => <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>{view === id && <motion.span className="selected-view" layoutId={reduced ? undefined : 'selected-view'} transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}<span>{label}</span></button>)}
       </nav>
@@ -138,7 +138,7 @@ function App() {
         <div className="status-copy">
           <span className="eyebrow">وضعیت اتصال</span>
           <div className="status-title-stack"><AnimatePresence initial={false}><StatusHeading key={statusTitle} title={statusTitle} reduced={!!reduced} /></AnimatePresence></div>
-          <p>{appStatus.message}</p>
+          <p dir="auto">{appStatus.message}</p>
         </div>
         <div className="status-controls"><div className="actions">
             {connected ? (
@@ -165,32 +165,32 @@ function App() {
           <label>
             <span>لینک اتصال VLESS</span>
             <input disabled={loading || busy || connected} dir="ltr" type={showSecret ? "text" : "password"} required aria-describedby="vless-help" placeholder="vless://uuid@server:443?..." value={profile.vlessLink} onChange={(e) => update("vlessLink", e.target.value.trim())} autoComplete="off" spellCheck={false} />
-            <small id="vless-help">Reality، TLS و انتقال‌های TCP، WebSocket و gRPC پشتیبانی می‌شوند.</small>
+            <small id="vless-help"><bdi dir="ltr">Reality، TLS، TCP، WebSocket و gRPC</bdi> پشتیبانی می‌شوند.</small>
           </label>
-          <div className="profile-tools"><button className="text-button" type="button" aria-pressed={showSecret} onClick={() => setShowSecret(!showSecret)}>{showSecret ? 'پنهان کردن لینک' : 'نمایش لینک'}</button><span className="saved-badge">{loading ? 'در حال بازیابی…' : saved ? 'پروفایل ذخیره دارد' : 'پروفایل جدید'}</span></div>
+          <div className="profile-tools"><button className="text-button" type="button" aria-pressed={showSecret} onClick={() => setShowSecret(!showSecret)}>{showSecret ? 'پنهان کردن لینک' : 'نمایش لینک'}</button><span className="saved-badge">{loading ? 'در حال بارگذاری…' : saved ? 'ذخیره شده' : 'ذخیره نشده'}</span></div>
           <label className="remember-option"><input type="checkbox" checked={remember} disabled={busy || loading || connected} onChange={(e) => { setRemember(e.target.checked); setNotice('برای اعمال این انتخاب، ذخیره را بزنید.'); }} /><span>کانفیگ برای دفعات بعد ذخیره شود<small>رمزگذاری با حساب ویندوز شما؛ بدون ذخیره در مرورگر</small></span></label>
 
           <div className="profile-tools"><button className="text-button" type="button" disabled={loading || busy || connected || !profile.vlessLink} onClick={handleSave}>ذخیره تنظیمات</button>{saved && <button className="text-button danger-text" type="button" disabled={busy || connected} onClick={() => setConfirmForget(!confirmForget)}>حذف کانفیگ ذخیره‌شده</button>}</div>
           {confirmForget && <div className="delete-confirm"><p>کانفیگ ذخیره‌شده حذف شود؟ برای اتصال بعدی باید دوباره واردش کنید.</p><button className="text-button danger-text" type="button" disabled={busy} onClick={handleForget}>بله، حذف شود</button><button className="text-button" type="button" onClick={() => setConfirmForget(false)}>انصراف</button></div>}
-          <p className="privacy-note" role="status">{notice || 'با اتصال، تنظیمات ذخیره‌سازی انتخاب‌شده اعمال می‌شوند.'}</p>
+          <p className="privacy-note" role="status">{notice || 'لینک VLESS را وارد کنید.'}</p>
         </form>
 
         <aside className="panel side-panel">
-          <div className="panel-heading"><div><span className="eyebrow">دامنهٔ اثر</span><h2>فقط Discord</h2></div></div>
+          <div className="panel-heading"><div><span className="eyebrow">مسیر برنامه‌ها</span><h2>فقط Discord</h2></div></div>
           <ul className="app-list">
             <li className="active"><span className="app-dot discord" /><div><strong>Discord</strong><small>TCP و UDP از پروکسی</small></div><span>Proxy</span></li>
             <li><span className="app-dot game" /><div><strong>بازی‌ها</strong><small>بدون تغییر مسیر</small></div><span>Direct</span></li>
             <li><span className="app-dot browser" /><div><strong>سایر برنامه‌ها</strong><small>اینترنت عادی</small></div><span>Direct</span></li>
           </ul>
           <div className="requirement">
-            <strong>{appStatus.engineReady ? "موتور آماده است" : "موتور شبکه نصب نیست"}</strong>
-            <p>در اولین اتصال، DisRoute یک مجوز Firewall محدود به موتور خودش می‌سازد و سپس مسیر VLESS را واقعاً آزمایش می‌کند.</p>
+            <strong>{appStatus.engineReady ? "موتور شبکه آماده است" : "فایل‌های موتور پیدا نشد"}</strong>
+            <p>در اولین اتصال، برنامه مجوز Firewall موردنیاز را برای موتور شبکه اضافه می‌کند و اتصال VLESS را بررسی می‌کند.</p>
             <p>{appStatus.isElevated ? 'دسترسی Administrator فعال است.' : 'برای اتصال، برنامه را با Run as administrator اجرا کنید.'}</p>
           </div>
         </aside>
       </div>
-      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">QUICK START</span><h2>از دانلود تا اولین اتصال</h2><ol><li><strong>بسته را کامل Extract کن.</strong><p>پوشه engine را کنار برنامه نگه دار. در اولین نصب، پیش‌نیازهای معرفی‌شده در راهنمای بسته لازم‌اند.</p></li><li><strong>با دسترسی Administrator اجرا کن.</strong><p>لینک VLESS خودت را وارد کن؛ گزینه ذخیره، ورود دوباره در دفعات بعد را حذف می‌کند.</p></li><li><strong>متصل شو و Discord را باز کن.</strong><p>آماده‌بودن تونل به معنی تأیید صدای دوطرفه نیست. سرور VLESS باید UDP را پشتیبانی کند.</p></li></ol><div className="requirement"><strong>برای دوستانت فقط ZIP نسخه را بفرست.</strong><p>هر نفر کانفیگ خودش را وارد می‌کند. فایل‌های AppData و گزارش‌ها را به بسته اضافه نکن.</p></div></motion.section>}</AnimatePresence>
-      <footer className="app-footer"><span>بستن پنجره: ادامه کنار ساعت · خروج کامل: منوی آیکون</span><span>VLESS · TCP + UDP</span></footer>
+      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر Discord باز است، آن را کامل ببندید و دوباره اجرا کنید. برای تماس صوتی، سرور باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کند.</p></li></ol></motion.section>}</AnimatePresence>
+      <footer className="app-footer"><span><bdi dir="ltr">Minimize to tray</bdi>: بستن پنجره · خروج کامل: منوی <bdi dir="ltr">Tray</bdi></span><span className="creator-credit">Created by Zexter</span><span dir="ltr">VLESS · TCP + UDP</span></footer>
     </main>
     </LayoutGroup></MotionConfig>
   );

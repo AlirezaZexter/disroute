@@ -32,7 +32,7 @@ Copy-Item (Join-Path $project 'LICENSE') (Join-Path $licenses 'ProxiFyre-AGPL-3.
 Copy-Item (Join-Path $project 'THIRD_PARTY_NOTICES.md') $licenses
 Copy-Item -LiteralPath $Executable -Destination (Join-Path $bundle 'DisRoute.exe')
 Copy-Item -LiteralPath $setup -Destination $bundle
-Copy-Item (Join-Path $project 'docs/START-HERE-FA.md') $bundle
+Copy-Item (Join-Path $project 'docs/START-HERE-FA.txt') $bundle
 $outputs = Join-Path $project 'outputs'
 New-Item -ItemType Directory -Force -Path $outputs | Out-Null
 $zip = Join-Path $outputs "DisRoute-$version-windows-x64.zip"

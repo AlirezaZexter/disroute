@@ -4,11 +4,11 @@ DisRoute is a Persian-first Windows desktop utility that routes Discord through 
 
 > Early development preview. Do not rely on this build for privacy or leak prevention yet.
 
-## Download / دانلود
+## Releases / دانلود نسخه‌ها
 
-Windows builds, once published, are under [Releases](https://github.com/AlirezaZexter/disroute/releases). Download `DisRoute-<version>-windows-x64.zip`, not “Source code.zip”. Extract it fully and read [راهنمای شروع](docs/START-HERE-FA.md).
+Windows builds are available on the [GitHub Releases page](https://github.com/AlirezaZexter/disroute/releases). Download `DisRoute-<version>-windows-x64.zip`, not “Source code.zip”. Extract it fully and read [راهنمای فارسی](docs/START-HERE-FA.txt).
 
-Each friend enters their own VLESS link. Share only the original release ZIP, never a used engine folder or AppData. Windows x64, WebView2, Visual C++ runtime and Windows Packet Filter are required. The package includes the official prerequisite installer; setup remains user-controlled.
+Windows x64, WebView2, Visual C++ runtime and Windows Packet Filter are required. The package includes the official prerequisite installer; setup remains user-controlled.
 
 ## New in 0.2
 
@@ -71,7 +71,7 @@ CI tests main and pull requests. Pushing a matching `v<package-version>` tag bui
 - UAC relaunch and background service lifecycle
 - Further runtime-secret hardening
 - Connection test, Discord detection, logs with secret redaction
-- Signed NSIS installer and GitHub Releases
+- Signed NSIS installer and stable releases
 - English and Persian localization
 
 ## License

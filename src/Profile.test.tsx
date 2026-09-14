@@ -54,7 +54,7 @@ it('keeps profile data when switching guide and connection views', async () => {
   render(<App />);
   await screen.findByDisplayValue(profile.vlessLink);
   fireEvent.click(screen.getByRole('button', { name: 'راهنمای شروع' }));
-  expect(screen.getByRole('heading', { name: 'از دانلود تا اولین اتصال' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'راه‌اندازی DisRoute' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'اتصال و پروفایل' }));
   expect(screen.getByDisplayValue(profile.vlessLink)).toBeInTheDocument();
 });

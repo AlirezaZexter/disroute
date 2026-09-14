@@ -144,7 +144,8 @@ button:focus-visible { outline: 2px solid #d9e0ff; outline-offset: 3px; }
 .guide-panel p { color: var(--muted); margin-top: 4px; font-size: 14px; }
 .delete-confirm { border: 1px solid #914b58; border-radius: 12px; padding: 12px; font-size: 13px; }
 .app-footer { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); margin-top: 24px; font-size: 12px; }
+.creator-credit { color: #91a4ff; direction: ltr; font-size: 11px; letter-spacing: .02em; }
 @keyframes workspace-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 760px) { .workspace-heading { align-items: start; flex-direction: column; } .status-card { gap: 12px; } .status-copy h2 { font-size: 20px; } }
+@media (max-width: 760px) { .workspace-heading { align-items: start; flex-direction: column; } .status-card { gap: 12px; } .status-copy h2 { font-size: 20px; } .app-footer { flex-wrap: wrap; } }
 @media (max-width: 760px) { .status-controls { grid-column: 1 / -1; min-width: 0; } }
 @media (prefers-reduced-motion: reduce) { .content-grid { animation: none; } .status-connecting .status-orb span { animation: none; } }

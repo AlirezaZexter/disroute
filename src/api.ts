@@ -11,7 +11,7 @@ const browserFallback: AppStatus = {
 const isTauri = () => "__TAURI_INTERNALS__" in window;
 
 export async function hideToTray(): Promise<void> {
-  if (!isTauri()) throw new Error("رفتن کنار ساعت فقط در برنامهٔ ویندوز در دسترس است.");
+  if (!isTauri()) throw new Error("Minimize to tray فقط در نسخهٔ ویندوز در دسترس است.");
   await invoke("hide_to_tray");
 }
 
