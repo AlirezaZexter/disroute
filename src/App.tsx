@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { connect, disconnect, getStatus, saveProfile, loadProfile, forgetProfile, hideToTray } from "./api";
+import { connect, disconnect, getStatus, saveProfile, loadProfile, forgetProfile, hideToTray, restartDiscord } from "./api";
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion, useIsPresent } from "motion/react";
 import type { AppStatus, ProxyProfile } from "./types";
 
@@ -33,6 +33,7 @@ function App() {
   const [profile, setProfile] = useState(initialProfile);
   const [appStatus, setAppStatus] = useState(emptyStatus);
   const [busy, setBusy] = useState(false);
+  const [discordBusy, setDiscordBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [remember, setRemember] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -60,10 +61,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (busy || !connected) return;
+    if (busy || discordBusy || !connected) return;
     const timer = window.setInterval(() => { getStatus().then(setAppStatus).catch(() => {}); }, 5000);
     return () => window.clearInterval(timer);
-  }, [busy, connected]);
+  }, [busy, discordBusy, connected]);
 
   const update = <K extends keyof ProxyProfile>(key: K, value: ProxyProfile[K]) =>
     { setProfile((current) => ({ ...current, [key]: value })); setNotice("تغییرات هنوز ذخیره نشده‌اند."); };
@@ -111,6 +112,22 @@ function App() {
     }
   }
 
+  async function handleRestartDiscord() {
+    setDiscordBusy(true);
+    setAppStatus((current) => ({ ...current, message: "در حال راه‌اندازی مجدد Discord…" }));
+    try {
+      const message = await restartDiscord();
+      setAppStatus((current) => ({ ...current, message }));
+    } catch (error) {
+      setAppStatus((current) => ({
+        ...current,
+        message: `اتصال روشن است؛ راه‌اندازی مجدد Discord ناموفق بود: ${String(error)}`,
+      }));
+    } finally {
+      setDiscordBusy(false);
+    }
+  }
+
   return (
     <MotionConfig reducedMotion="user" transition={{ duration: reduced ? 0 : .22 }}><LayoutGroup>
     <main className="shell">
@@ -120,7 +137,7 @@ function App() {
           <h1>DisRoute</h1>
           <p>اتصال VLESS برای Discord</p>
         </div>
-        <span className="version">WINDOWS · 0.2.3 PREVIEW</span>
+        <span className="version">WINDOWS · 0.2.4 PREVIEW</span>
         <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
       </header>
 
@@ -142,7 +159,7 @@ function App() {
         </div>
         <div className="status-controls"><div className="actions">
             {connected ? (
-              <button className="button button-danger" type="button" onClick={handleDisconnect} disabled={busy}>قطع اتصال</button>
+              <><button className="button button-secondary" type="button" onClick={handleRestartDiscord} disabled={busy || discordBusy}>{discordBusy ? "در حال اجرا…" : "Restart Discord"}</button><button className="button button-danger" type="button" onClick={handleDisconnect} disabled={busy || discordBusy}>قطع اتصال</button></>
             ) : (
               <button className="button button-primary" type="submit" form="connection-form" disabled={loading || busy || !profile.vlessLink}>{busy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
             )}
@@ -189,7 +206,7 @@ function App() {
           </div>
         </aside>
       </div>
-      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر Discord باز است، آن را کامل ببندید و دوباره اجرا کنید. برای تماس صوتی، سرور باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کند.</p></li></ol></motion.section>}</AnimatePresence>
+      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر پنجرهٔ Discord باز نشد، از دکمهٔ <bdi dir="ltr">Restart Discord</bdi> استفاده کنید. اتصال DisRoute قطع نمی‌شود. برای تماس صوتی، سرور باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کند.</p></li></ol></motion.section>}</AnimatePresence>
       <footer className="app-footer"><span><bdi dir="ltr">Minimize to tray</bdi>: بستن پنجره · خروج کامل: منوی <bdi dir="ltr">Tray</bdi></span><span className="creator-credit">Created by Zexter</span><span dir="ltr">VLESS · TCP + UDP</span></footer>
     </main>
     </LayoutGroup></MotionConfig>

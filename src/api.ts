@@ -40,3 +40,8 @@ export async function disconnect(): Promise<AppStatus> {
   if (!isTauri()) return browserFallback;
   return invoke<AppStatus>("stop_tunnel");
 }
+
+export async function restartDiscord(): Promise<string> {
+  if (!isTauri()) throw new Error("Restart Discord فقط در نسخهٔ ویندوز در دسترس است.");
+  return invoke<string>("restart_discord");
+}

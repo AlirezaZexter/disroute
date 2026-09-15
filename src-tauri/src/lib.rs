@@ -1,3 +1,4 @@
+mod discord;
 mod engine;
 mod model;
 mod profile_store;
@@ -66,8 +67,16 @@ fn stop_tunnel(
         .stop(&app)
 }
 
+#[tauri::command]
+fn restart_discord() -> Result<String, String> {
+    discord::restart()
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main(app);
+        }))
         .manage(Mutex::new(EngineManager::default()))
         .setup(|app| {
             use tauri::{
@@ -126,7 +135,8 @@ pub fn run() {
             load_profile,
             forget_profile,
             start_tunnel,
-            stop_tunnel
+            stop_tunnel,
+            restart_discord
         ])
         .run(tauri::generate_context!())
         .expect("error while running DisRoute");

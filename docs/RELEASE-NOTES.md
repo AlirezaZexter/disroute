@@ -1,4 +1,7 @@
-# DisRoute 0.2.3 — Windows preview
+# DisRoute 0.2.4 — Windows preview
+
+- Added a dedicated Restart Discord action that clears a stuck background instance and relaunches Discord without stopping the VLESS tunnel.
+- Added single-instance protection: launching DisRoute again now focuses the existing window instead of colliding on local proxy ports.
 
 - Windows-protected saved VLESS profiles, restore on launch, opt-out and confirmed deletion.
 - Refined Persian RTL UI with shared-layout navigation, status crossfade and reduced-motion support.

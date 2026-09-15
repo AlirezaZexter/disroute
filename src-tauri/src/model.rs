@@ -105,7 +105,7 @@ fn parse_vless_link(value: &str) -> Result<serde_json::Value, String> {
         "server_port": port, "uuid": uuid, "packet_encoding": "xudp"
     });
     if let Some(flow) = query.get("flow").filter(|v| !v.is_empty()) {
-        if flow != &"xtls-rprx-vision" {
+        if flow != "xtls-rprx-vision" {
             return Err(format!("Flow پشتیبانی‌نشده: {flow}"));
         }
         outbound["flow"] = serde_json::json!(flow);

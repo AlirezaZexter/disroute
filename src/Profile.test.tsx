@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import * as api from "./api";
 import App from "./App";
 
-vi.mock('./api', () => ({ getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('./api', () => ({ getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined), restartDiscord: vi.fn() }));
 const profile = { name: 'My route', vlessLink: 'vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls' };
 const status = { status: 'disconnected' as const, engineReady: true, isElevated: true, message: 'ready' };
 beforeEach(() => {
@@ -14,6 +14,7 @@ beforeEach(() => {
   vi.mocked(api.saveProfile).mockResolvedValue();
   vi.mocked(api.forgetProfile).mockResolvedValue();
   vi.mocked(api.connect).mockResolvedValue({ ...status, status: 'connected' });
+  vi.mocked(api.restartDiscord).mockResolvedValue('Discord دوباره اجرا شد.');
 });
 afterEach(cleanup);
 it('restores a masked profile and saves it before connection', async () => {
@@ -57,4 +58,15 @@ it('keeps profile data when switching guide and connection views', async () => {
   expect(screen.getByRole('heading', { name: 'راه‌اندازی DisRoute' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'اتصال و پروفایل' }));
   expect(screen.getByDisplayValue(profile.vlessLink)).toBeInTheDocument();
+});
+
+it('offers a Discord restart without disconnecting the tunnel', async () => {
+  render(<App />);
+  await screen.findByDisplayValue(profile.vlessLink);
+  fireEvent.click(screen.getByRole('button', { name: 'اتصال Discord' }));
+  const restart = await screen.findByRole('button', { name: 'Restart Discord' });
+  fireEvent.click(restart);
+  await waitFor(() => expect(api.restartDiscord).toHaveBeenCalledOnce());
+  expect(api.disconnect).not.toHaveBeenCalled();
+  expect(await screen.findByText('Discord دوباره اجرا شد.')).toBeInTheDocument();
 });
