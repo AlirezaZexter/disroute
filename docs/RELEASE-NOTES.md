@@ -1,4 +1,7 @@
-# DisRoute 0.2.4 — Windows preview
+# DisRoute 0.2.5 — Windows preview
+
+- Fixed false VLESS connection failures caused by requiring exact HTTP 200 responses from both Discord and its update service.
+- A successful SOCKS connection now stays active when the optional Windows HTTPS check is inconclusive, with a clear recovery message instead of shutting the tunnel down.
 
 - Added a dedicated Restart Discord action that clears a stuck background instance and relaunches Discord without stopping the VLESS tunnel.
 - Added single-instance protection: launching DisRoute again now focuses the existing window instead of colliding on local proxy ports.

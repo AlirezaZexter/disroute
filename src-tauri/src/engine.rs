@@ -19,6 +19,7 @@ fn hidden_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
 
 #[derive(Default)]
 pub struct EngineManager {
+    connection_notice: Option<String>,
     voice_proxy: Option<crate::voice_proxy::VoiceProxy>,
     proxifyre: Option<Child>,
     sing_box: Option<Child>,
@@ -55,6 +56,7 @@ impl EngineManager {
         let tunnel_running = child_running(&mut self.sing_box);
         let running = proxy_running && tunnel_running && self.voice_proxy.is_some();
         if !running {
+            self.connection_notice = None;
             self.voice_proxy.take();
             stop_child(&mut self.proxifyre);
             stop_child(&mut self.sing_box);
@@ -71,7 +73,9 @@ impl EngineManager {
             engine_ready,
             is_elevated: is_elevated(),
             message: if running {
-                "موتور فعال است؛ پاسخ HTTPS هنگام اتصال بررسی شد. Discord را باز کنید.".into()
+                self.connection_notice.clone().unwrap_or_else(|| {
+                    "موتور فعال است؛ مسیر Discord از طریق VLESS برقرار شد.".into()
+                })
             } else if engine_ready {
                 "موتور آماده است؛ مشخصات اتصال را وارد کنید.".into()
             } else {
@@ -186,17 +190,22 @@ impl EngineManager {
             ));
         }
 
-        if let Err(error) = probe_vless() {
-            self.voice_proxy.take();
-            stop_child(&mut self.proxifyre);
-            stop_child(&mut self.sing_box);
-            let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
-            return Err(format!("آزمایش واقعی VLESS ناموفق بود: {error}"));
-        }
+        let https_warning = match probe_vless() {
+            Ok(warning) => warning,
+            Err(error) => {
+                self.voice_proxy.take();
+                stop_child(&mut self.proxifyre);
+                stop_child(&mut self.sing_box);
+                let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
+                return Err(format!("آزمایش واقعی VLESS ناموفق بود: {error}"));
+            }
+        };
+        self.connection_notice = https_warning;
         Ok(self.status(app))
     }
 
     pub fn stop(&mut self, app: &AppHandle) -> Result<AppStatus, String> {
+        self.connection_notice = None;
         self.voice_proxy.take();
         stop_child(&mut self.proxifyre);
         stop_child(&mut self.sing_box);
@@ -235,7 +244,7 @@ fn stop_child(child: &mut Option<Child>) {
     }
 }
 
-fn probe_vless() -> Result<(), String> {
+fn probe_vless() -> Result<Option<String>, String> {
     let address = SocketAddr::from((Ipv4Addr::LOCALHOST, 2080));
     let mut stream = TcpStream::connect_timeout(&address, Duration::from_secs(3))
         .map_err(|_| "موتور SOCKS محلی روی پورت ۲۰۸۰ پاسخ نمی‌دهد.")?;
@@ -276,22 +285,69 @@ fn probe_vless() -> Result<(), String> {
         ));
     }
     drop(stream);
-    let curl = PathBuf::from(std::env::var_os("SystemRoot").ok_or("مسیر Windows یافت نشد.")?)
-        .join("System32")
-        .join("curl.exe");
-    for endpoint in [
-        "https://discord.com/api/v10/gateway",
-        "https://updates.discord.com/distributions/app/manifests/latest?channel=stable&platform=win&arch=x64",
-    ] {
-        let response = hidden_command(&curl)
-            .args(["--proxy", "socks5h://127.0.0.1:2080", "--connect-timeout", "5",
-                "--max-time", "15", "--silent", "--output", "NUL", "--write-out", "%{http_code}", endpoint])
-            .output().map_err(|_| "اجرای تست HTTPS ممکن نشد؛ curl ویندوز در دسترس نیست.")?;
-        if !response.status.success() || response.stdout != b"200" {
-            return Err("پاسخ HTTPS معتبر از Discord یا سرور آپدیت دریافت نشد؛ سرور VLESS را بررسی کنید.".into());
+    let warning = "تونل VLESS برقرار شد، اما تست تکمیلی HTTPS در این ویندوز کامل نشد. Discord را باز کنید؛ اگر وصل نشد، ساعت Windows و تنظیمات Firewall یا Antivirus را بررسی کنید.";
+    let Some(system_root) = std::env::var_os("SystemRoot") else {
+        return Ok(Some(warning.into()));
+    };
+    let curl = PathBuf::from(system_root).join("System32").join("curl.exe");
+    let response = match hidden_command(&curl)
+        .args([
+            "--proxy",
+            "socks5h://127.0.0.1:2080",
+            "--connect-timeout",
+            "5",
+            "--max-time",
+            "15",
+            "--silent",
+            "--show-error",
+            "--output",
+            "NUL",
+            "--write-out",
+            "%{http_code}",
+            "--user-agent",
+            "Mozilla/5.0",
+            "https://discord.com/api/v10/gateway",
+        ])
+        .output()
+    {
+        Ok(response) => response,
+        Err(_) => return Ok(Some(warning.into())),
+    };
+
+    // Any real HTTP response proves that TLS reached Discord through VLESS.
+    // Requiring exactly 200 caused false failures for redirects and edge/WAF
+    // responses that vary by Windows version and outbound server IP.
+    if response.status.success() && is_http_response(&response.stdout) {
+        Ok(None)
+    } else {
+        Ok(Some(warning.into()))
+    }
+}
+
+fn is_http_response(value: &[u8]) -> bool {
+    std::str::from_utf8(value)
+        .ok()
+        .and_then(|value| value.trim().parse::<u16>().ok())
+        .is_some_and(|code| (100..600).contains(&code))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_http_response;
+
+    #[test]
+    fn accepts_reachable_discord_http_responses() {
+        for code in [b"200".as_slice(), b"301", b"403", b"503"] {
+            assert!(is_http_response(code));
         }
     }
-    Ok(())
+
+    #[test]
+    fn rejects_missing_http_responses() {
+        for code in [b"000".as_slice(), b"", b"timeout"] {
+            assert!(!is_http_response(code));
+        }
+    }
 }
 
 #[cfg(windows)]

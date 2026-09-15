@@ -11,7 +11,7 @@ DisRoute
 
 نام فایل دانلودی به این شکل است:
 
-DisRoute-0.2.4-windows-x64.zip
+DisRoute-0.2.5-windows-x64.zip
 
 برنامه را مستقیم از داخل فایل فشرده اجرا نکنید.
 
