@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Use the newest DisRoute release and extract it into a fresh folder before debugging an older installation. Never post a complete VLESS link, `profile.dpapi`, runtime configuration, packet capture, or unredacted log in a public issue.
+Use the newest DisRoute release and extract it into a fresh folder before debugging an older installation. Never post a complete proxy link, `profile.dpapi`, runtime configuration, packet capture, or unredacted log in a public issue.
 
 ## Connection does not start
 
@@ -8,7 +8,7 @@ Use the newest DisRoute release and extract it into a fresh folder before debugg
 2. Confirm that the `engine` directory is beside the executable.
 3. Install the bundled ProxiFyre prerequisite package and reboot Windows if its installer requests it.
 4. Check the Windows clock, Firewall, and Antivirus if the optional HTTPS probe cannot complete.
-5. Try the same VLESS share link in a trusted client. A working TCP connection does not prove UDP support.
+5. Try the same share link in a trusted client. A working TCP connection does not prove UDP support.
 
 ## Discord does not reopen
 
@@ -21,7 +21,7 @@ Voice may connect while screen sharing remains unstable because the two workload
 Check these in order:
 
 1. Stop other uploads, cloud sync, torrents, and game updates on the same internet connection.
-2. Try a geographically closer VLESS server with lower packet loss and enough upstream bandwidth.
+2. Try a geographically closer proxy server with lower packet loss and enough upstream bandwidth.
 3. Confirm that the server supports UDP and the packet encoding carried by the share link. DisRoute recognizes `packetEncoding=xudp`, `packetEncoding=packetaddr`, and `packetEncoding=none`; when absent, XUDP remains the default.
 4. Compare a raw TCP/Reality link with WebSocket or gRPC only when the server offers both. Every TCP-based option can suffer head-of-line blocking when the path loses packets.
 5. Test the same server and Discord stream through another client. If upload is still poor, the bottleneck is outside DisRoute.
@@ -43,7 +43,7 @@ Include:
 
 - DisRoute version and Windows version;
 - Discord channel: Stable, PTB, or Canary;
-- VLESS transport/security names without host, UUID, keys, or paths;
+- protocol and transport/security names without host, UUID, passwords, keys, or paths;
 - whether text, voice, and streaming fail independently;
 - exact visible error text;
 - whether the same redacted setup works in another client.

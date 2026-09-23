@@ -5,8 +5,20 @@ import type { AppStatus, ProxyProfile } from "./types";
 
 const initialProfile: ProxyProfile = {
   name: "Discord",
-  vlessLink: "",
+  configLink: "",
 };
+
+const protocolNames = {
+  vless: "VLESS",
+  vmess: "VMess",
+  trojan: "Trojan",
+  ss: "Shadowsocks",
+} as const;
+
+function detectProtocol(value: string) {
+  const scheme = value.trim().match(/^([a-z][a-z0-9+.-]*):\/\//i)?.[1]?.toLowerCase();
+  return scheme && scheme in protocolNames ? protocolNames[scheme as keyof typeof protocolNames] : null;
+}
 
 const emptyStatus: AppStatus = {
   status: "disconnected",
@@ -47,10 +59,15 @@ function App() {
   const [saved, setSaved] = useState(false);
   const [notice, setNotice] = useState("");
   const [showSecret, setShowSecret] = useState(false);
+  const [configTouched, setConfigTouched] = useState(false);
   const [confirmForget, setConfirmForget] = useState(false);
   const [view, setView] = useState<"connection" | "guide">("connection");
   const reduced = useReducedMotion();
   const connected = appStatus.status === "connected";
+  const detectedProtocol = detectProtocol(profile.configLink);
+  const hasConfig = profile.configLink.trim().length > 0;
+  const unsupportedConfig = hasConfig && !detectedProtocol;
+  const configInvalid = configTouched && unsupportedConfig;
   const statusTitle = {
     disconnected: "آمادهٔ اتصال",
     connecting: "در حال اتصال",
@@ -143,9 +160,9 @@ function App() {
         <div className="brand-mark"><ShieldIcon /></div>
         <div>
           <h1>DisRoute</h1>
-          <p>اتصال VLESS برای Discord</p>
+          <p>مسیریابی اختصاصی Discord</p>
         </div>
-        <span className="version">WINDOWS · 0.2.6 PREVIEW</span>
+        <span className="version">WINDOWS · 0.3.0 PREVIEW</span>
         <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
       </header>
 
@@ -169,7 +186,7 @@ function App() {
             {connected ? (
               <><button className="button button-secondary" type="button" onClick={handleRestartDiscord} disabled={busy || discordBusy}>{discordBusy ? "در حال اجرا…" : "Restart Discord"}</button><button className="button button-danger" type="button" onClick={handleDisconnect} disabled={busy || discordBusy}>قطع اتصال</button></>
             ) : (
-              <button className="button button-primary" type="submit" form="connection-form" disabled={loading || busy || !profile.vlessLink}>{busy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
+              <button className="button button-primary" type="submit" form="connection-form" disabled={loading || busy || !hasConfig || unsupportedConfig}>{busy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
             )}
           </div><div className="route-map" aria-label="مسیر دوطرفهٔ شبکه بین Discord، Proxy و Internet">
           <span>Discord</span><BidirectionalRouteIcon /><span>Proxy</span><BidirectionalRouteIcon /><span>Internet</span>
@@ -179,8 +196,8 @@ function App() {
       <div className="content-grid" hidden={view !== 'connection'}>
         <form id="connection-form" className="panel" onSubmit={handleSubmit}>
           <div className="panel-heading">
-            <div><span className="eyebrow">پروفایل اتصال</span><h2>مشخصات VLESS</h2></div>
-            <span className="protocol-pill">VLESS</span>
+            <div><span className="eyebrow">پروفایل اتصال</span><h2>کانفیگ پروکسی</h2></div>
+            <span className="protocol-pill" aria-live="polite">{detectedProtocol || "Xray"}</span>
           </div>
 
           <label>
@@ -188,16 +205,16 @@ function App() {
             <input required disabled={loading || busy || connected} value={profile.name} onChange={(e) => update("name", e.target.value)} autoComplete="off" />
           </label>
           <label>
-            <span>لینک اتصال VLESS</span>
-            <input disabled={loading || busy || connected} dir="ltr" type={showSecret ? "text" : "password"} required aria-describedby="vless-help" placeholder="vless://uuid@server:443?..." value={profile.vlessLink} onChange={(e) => update("vlessLink", e.target.value.trim())} autoComplete="off" spellCheck={false} />
-            <small id="vless-help"><bdi dir="ltr">Reality، TLS، TCP، WebSocket و gRPC</bdi> پشتیبانی می‌شوند.</small>
+            <span>لینک اتصال</span>
+            <input id="config-link" disabled={loading || busy || connected} dir="ltr" type={showSecret ? "text" : "password"} required aria-describedby="config-help" aria-invalid={configInvalid} placeholder="vless:// · vmess:// · trojan:// · ss://" value={profile.configLink} onChange={(e) => update("configLink", e.target.value.trim())} onBlur={() => setConfigTouched(true)} autoComplete="off" spellCheck={false} />
+            <small id="config-help" className={configInvalid ? "field-error" : undefined}>{configInvalid ? "این نوع لینک پشتیبانی نمی‌شود." : <><bdi dir="ltr">VLESS، VMess، Trojan و Shadowsocks</bdi> پشتیبانی می‌شوند.</>}</small>
           </label>
           <div className="profile-tools"><button className="text-button" type="button" aria-pressed={showSecret} onClick={() => setShowSecret(!showSecret)}>{showSecret ? 'پنهان کردن لینک' : 'نمایش لینک'}</button><span className="saved-badge">{loading ? 'در حال بارگذاری…' : saved ? 'ذخیره شده' : 'ذخیره نشده'}</span></div>
           <label className="remember-option"><input type="checkbox" checked={remember} disabled={busy || loading || connected} onChange={(e) => { setRemember(e.target.checked); setNotice('برای اعمال این انتخاب، ذخیره را بزنید.'); }} /><span>کانفیگ برای دفعات بعد ذخیره شود<small>رمزگذاری با حساب ویندوز شما؛ بدون ذخیره در مرورگر</small></span></label>
 
-          <div className="profile-tools"><button className="text-button" type="button" disabled={loading || busy || connected || !profile.vlessLink} onClick={handleSave}>ذخیره تنظیمات</button>{saved && <button className="text-button danger-text" type="button" disabled={busy || connected} onClick={() => setConfirmForget(!confirmForget)}>حذف کانفیگ ذخیره‌شده</button>}</div>
+          <div className="profile-tools"><button className="text-button" type="button" disabled={loading || busy || connected || !hasConfig || unsupportedConfig} onClick={handleSave}>ذخیره تنظیمات</button>{saved && <button className="text-button danger-text" type="button" disabled={busy || connected} onClick={() => setConfirmForget(!confirmForget)}>حذف کانفیگ ذخیره‌شده</button>}</div>
           {confirmForget && <div className="delete-confirm"><p>کانفیگ ذخیره‌شده حذف شود؟ برای اتصال بعدی باید دوباره واردش کنید.</p><button className="text-button danger-text" type="button" disabled={busy} onClick={handleForget}>بله، حذف شود</button><button className="text-button" type="button" onClick={() => setConfirmForget(false)}>انصراف</button></div>}
-          <p className="privacy-note" role="status">{notice || 'لینک VLESS را وارد کنید.'}</p>
+          <p className="privacy-note" role="status">{notice || 'لینک کانفیگ را وارد کنید.'}</p>
         </form>
 
         <aside className="panel side-panel">
@@ -209,13 +226,13 @@ function App() {
           </ul>
           <div className="requirement">
             <strong>{appStatus.engineReady ? "موتور شبکه آماده است" : "فایل‌های موتور پیدا نشد"}</strong>
-            <p>در اولین اتصال، برنامه مجوز Firewall موردنیاز را برای موتور شبکه اضافه می‌کند و اتصال VLESS را بررسی می‌کند.</p>
+            <p>در اولین اتصال، برنامه مجوز Firewall موردنیاز را برای موتور شبکه اضافه می‌کند و اتصال پروکسی را بررسی می‌کند.</p>
             <p>{appStatus.isElevated ? 'دسترسی Administrator فعال است.' : 'برای اتصال، برنامه را با Run as administrator اجرا کنید.'}</p>
           </div>
         </aside>
       </div>
-      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر پنجرهٔ Discord باز نشد، از دکمهٔ <bdi dir="ltr">Restart Discord</bdi> استفاده کنید. اتصال DisRoute قطع نمی‌شود. برای تماس صوتی، سرور باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کند.</p></li><li><strong>استریم روان به آپلود سالم نیاز دارد.</strong><p>اگر صدا وصل است ولی استریم تکه‌تکه می‌شود، یک سرور نزدیک‌تر با پشتیبانی درست از <bdi dir="ltr">UDP/XUDP</bdi> امتحان کنید.</p></li></ol></motion.section>}</AnimatePresence>
-      <footer className="app-footer"><span><bdi dir="ltr">Minimize to tray</bdi>: بستن پنجره · خروج کامل: منوی <bdi dir="ltr">Tray</bdi></span><span className="creator-credit">Created by Zexter</span><span dir="ltr">VLESS · TCP + UDP</span></footer>
+      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS، VMess، Trojan یا Shadowsocks</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر پنجرهٔ Discord باز نشد، از دکمهٔ <bdi dir="ltr">Restart Discord</bdi> استفاده کنید. اتصال DisRoute قطع نمی‌شود. برای تماس صوتی، سرور و پروتکل انتخابی باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کنند.</p></li><li><strong>استریم روان به آپلود سالم نیاز دارد.</strong><p>اگر صدا وصل است ولی استریم تکه‌تکه می‌شود، یک سرور نزدیک‌تر با پشتیبانی درست از <bdi dir="ltr">UDP</bdi> امتحان کنید.</p></li></ol></motion.section>}</AnimatePresence>
+      <footer className="app-footer"><span><bdi dir="ltr">Minimize to tray</bdi>: بستن پنجره · خروج کامل: منوی <bdi dir="ltr">Tray</bdi></span><span className="creator-credit">Created by Zexter</span><span dir="ltr">VLESS · VMess · Trojan · SS</span></footer>
     </main>
     </LayoutGroup></MotionConfig>
   );

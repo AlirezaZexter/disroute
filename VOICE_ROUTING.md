@@ -1,6 +1,6 @@
 # Voice DNS recovery
 
-Path: Discord processes → ProxiFyre → loopback SOCKS bridge :2080 → sing-box :2081 → VLESS.
+Path: Discord processes → ProxiFyre → loopback SOCKS bridge :2080 → sing-box :2081 → selected proxy.
 
 The ISP returned a block-page IP for dynamic `*.discord.media` hosts. HTTPS messages worked with fixed-name overrides, but voice WSS failed before UDP negotiation. An unauthenticated probe failed with local DNS and returned HTTP 101 with remote SOCKS DNS.
 
@@ -8,6 +8,6 @@ The bridge recovers validated `*.discord.media` SNI from IP-addressed TLS on por
 
 SNI inspection requires an early SOCKS success response for IP-addressed TLS; upstream failure then closes that stream. Consequently, SOCKS success is not a connectivity guarantee. The application also attempts a Discord HTTPS response through the tunnel; an inconclusive optional HTTPS check is reported as a warning instead of tearing down a valid SOCKS connection. The bridge is stopped and its sockets shut down on disconnect, startup failure or engine shutdown.
 
-Limitations: encrypted ClientHello, new voice TLS ports, missing SNI and a VLESS server without the selected UDP packet encoding need separate handling. DisRoute accepts XUDP, `packetaddr`, or disabled packet encoding from the VLESS share link and defaults to XUDP when the link omits it. The live WSS probe does not establish an authenticated voice call, measure upload throughput, or prove bidirectional audio/video.
+Limitations: encrypted ClientHello, new voice TLS ports, missing SNI and a proxy server without UDP support need separate handling. For VLESS and VMess, DisRoute accepts compatible XUDP or `packetaddr` packet encoding and defaults to XUDP when omitted. The live WSS probe does not establish an authenticated voice call, measure upload throughput, or prove bidirectional audio/video.
 
 Tests: `cargo test --manifest-path src-tauri/Cargo.toml --features custom-protocol`. The ignored `live_voice_handshake` test explicitly requires an existing tunnel on :2080 and uses a temporary bridge on :22080; it sends no Discord account credentials. Its test endpoint may expire. Do not enable ignored tests in generic CI.

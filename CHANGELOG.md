@@ -4,6 +4,18 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-23
+
+### Added
+
+- VMess, Trojan, and Shadowsocks share-link support alongside VLESS.
+- Live protocol detection and inline unsupported-link feedback in the connection form.
+
+### Changed
+
+- Renamed the encrypted profile field from VLESS-specific `vlessLink` to `configLink` while preserving automatic migration for 0.2.x profiles.
+- Generalized connection checks, status copy, documentation, and sing-box outbound tags for every supported protocol.
+
 ## [0.2.6] - 2026-09-23
 
 ### Added
@@ -39,7 +51,8 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 - Shipped a GUI-only executable with an explicit notification-area icon.
 
-[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/AlirezaZexter/disroute/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/AlirezaZexter/disroute/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/AlirezaZexter/disroute/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/AlirezaZexter/disroute/compare/v0.2.3...v0.2.4

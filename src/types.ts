@@ -2,7 +2,7 @@ export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "er
 
 export interface ProxyProfile {
   name: string;
-  vlessLink: string;
+  configLink: string;
 }
 
 export interface AppStatus {

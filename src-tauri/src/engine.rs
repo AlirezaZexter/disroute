@@ -74,7 +74,7 @@ impl EngineManager {
             is_elevated: is_elevated(),
             message: if running {
                 self.connection_notice.clone().unwrap_or_else(|| {
-                    "موتور فعال است؛ مسیر Discord از طریق VLESS برقرار شد.".into()
+                    "موتور فعال است؛ مسیر Discord از طریق پروکسی برقرار شد.".into()
                 })
             } else if engine_ready {
                 "موتور آماده است؛ مشخصات اتصال را وارد کنید.".into()
@@ -130,7 +130,7 @@ impl EngineManager {
             .map_err(|e| format!("اعتبارسنجی sing-box اجرا نشد: {e}"))?;
         if !check.status.success() {
             return Err(format!(
-                "کانفیگ VLESS پذیرفته نشد: {}",
+                "کانفیگ پروکسی پذیرفته نشد: {}",
                 String::from_utf8_lossy(&check.stderr)
             ));
         }
@@ -190,14 +190,14 @@ impl EngineManager {
             ));
         }
 
-        let https_warning = match probe_vless() {
+        let https_warning = match probe_proxy() {
             Ok(warning) => warning,
             Err(error) => {
                 self.voice_proxy.take();
                 stop_child(&mut self.proxifyre);
                 stop_child(&mut self.sing_box);
                 let _ = std::fs::remove_file(engine_dir.join("sing-box.json"));
-                return Err(format!("آزمایش واقعی VLESS ناموفق بود: {error}"));
+                return Err(format!("آزمایش واقعی پروکسی ناموفق بود: {error}"));
             }
         };
         self.connection_notice = https_warning;
@@ -244,7 +244,7 @@ fn stop_child(child: &mut Option<Child>) {
     }
 }
 
-fn probe_vless() -> Result<Option<String>, String> {
+fn probe_proxy() -> Result<Option<String>, String> {
     let address = SocketAddr::from((Ipv4Addr::LOCALHOST, 2080));
     let mut stream = TcpStream::connect_timeout(&address, Duration::from_secs(3))
         .map_err(|_| "موتور SOCKS محلی روی پورت ۲۰۸۰ پاسخ نمی‌دهد.")?;
@@ -277,7 +277,7 @@ fn probe_vless() -> Result<Option<String>, String> {
     let mut response = [0u8; 4];
     stream
         .read_exact(&mut response)
-        .map_err(|_| "سرور VLESS در زمان مقرر پاسخ نداد.")?;
+        .map_err(|_| "سرور پروکسی در زمان مقرر پاسخ نداد.")?;
     if response[0] != 0x05 || response[1] != 0x00 {
         return Err(format!(
             "تونل درخواست آزمایشی را رد کرد (کد SOCKS {}).",
@@ -285,7 +285,7 @@ fn probe_vless() -> Result<Option<String>, String> {
         ));
     }
     drop(stream);
-    let warning = "تونل VLESS برقرار شد، اما تست تکمیلی HTTPS در این ویندوز کامل نشد. Discord را باز کنید؛ اگر وصل نشد، ساعت Windows و تنظیمات Firewall یا Antivirus را بررسی کنید.";
+    let warning = "تونل پروکسی برقرار شد، اما تست تکمیلی HTTPS در این ویندوز کامل نشد. Discord را باز کنید؛ اگر وصل نشد، ساعت Windows و تنظیمات Firewall یا Antivirus را بررسی کنید.";
     let Some(system_root) = std::env::var_os("SystemRoot") else {
         return Ok(Some(warning.into()));
     };
@@ -314,7 +314,7 @@ fn probe_vless() -> Result<Option<String>, String> {
         Err(_) => return Ok(Some(warning.into())),
     };
 
-    // Any real HTTP response proves that TLS reached Discord through VLESS.
+    // Any real HTTP response proves that TLS reached Discord through the proxy.
     // Requiring exactly 200 caused false failures for redirects and edge/WAF
     // responses that vary by Windows version and outbound server IP.
     if response.status.success() && is_http_response(&response.stdout) {
@@ -329,25 +329,6 @@ fn is_http_response(value: &[u8]) -> bool {
         .ok()
         .and_then(|value| value.trim().parse::<u16>().ok())
         .is_some_and(|code| (100..600).contains(&code))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::is_http_response;
-
-    #[test]
-    fn accepts_reachable_discord_http_responses() {
-        for code in [b"200".as_slice(), b"301", b"403", b"503"] {
-            assert!(is_http_response(code));
-        }
-    }
-
-    #[test]
-    fn rejects_missing_http_responses() {
-        for code in [b"000".as_slice(), b"", b"timeout"] {
-            assert!(!is_http_response(code));
-        }
-    }
 }
 
 #[cfg(windows)]
@@ -432,4 +413,23 @@ fn is_elevated() -> bool {
 #[cfg(not(windows))]
 fn is_elevated() -> bool {
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_http_response;
+
+    #[test]
+    fn accepts_reachable_discord_http_responses() {
+        for code in [b"200".as_slice(), b"301", b"403", b"503"] {
+            assert!(is_http_response(code));
+        }
+    }
+
+    #[test]
+    fn rejects_missing_http_responses() {
+        for code in [b"000".as_slice(), b"", b"timeout"] {
+            assert!(!is_http_response(code));
+        }
+    }
 }

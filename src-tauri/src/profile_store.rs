@@ -101,14 +101,17 @@ mod tests {
             std::env::temp_dir().join(format!("disroute-profile-test-{}", std::process::id()));
         let mut profile = ProxyProfile {
             name: "test".into(),
-            vless_link: "vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls"
-                .into(),
+            config_link:
+                "vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls".into(),
         };
         assert!(load(&dir).unwrap().is_none());
         save(&dir, &profile).unwrap();
         let encrypted = std::fs::read(dir.join("profile.dpapi")).unwrap();
         assert!(!String::from_utf8_lossy(&encrypted).contains("vless://"));
-        assert_eq!(load(&dir).unwrap().unwrap().vless_link, profile.vless_link);
+        assert_eq!(
+            load(&dir).unwrap().unwrap().config_link,
+            profile.config_link
+        );
         profile.name = "updated".into();
         save(&dir, &profile).unwrap();
         assert_eq!(load(&dir).unwrap().unwrap().name, "updated");

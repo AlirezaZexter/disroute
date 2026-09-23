@@ -11,15 +11,15 @@ describe("DisRoute dashboard", () => {
     expect(screen.getByRole("heading", { name: "فقط Discord" })).toBeInTheDocument();
     expect(screen.getByText("بازی‌ها")).toBeInTheDocument();
     expect(screen.getAllByText("Direct")).toHaveLength(2);
-    expect(screen.getByRole("heading", { name: "مشخصات VLESS" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "کانفیگ پروکسی" })).toBeInTheDocument();
     expect(screen.getByText(/مجوز Firewall موردنیاز/)).toBeInTheDocument();
     expect(screen.getByLabelText(/مسیر دوطرفهٔ شبکه/).querySelectorAll("svg")).toHaveLength(2);
   });
 
   it("announces preview connection failures with text instead of color alone", async () => {
     render(<App />);
-    await waitFor(() => expect(screen.getByPlaceholderText("vless://uuid@server:443?...")).toBeEnabled());
-    fireEvent.change(screen.getByPlaceholderText("vless://uuid@server:443?..."), {
+    await waitFor(() => expect(screen.getByPlaceholderText("vless:// · vmess:// · trojan:// · ss://")).toBeEnabled());
+    fireEvent.change(screen.getByPlaceholderText("vless:// · vmess:// · trojan:// · ss://"), {
       target: { value: "vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls" },
     });
     fireEvent.click(screen.getByRole("button", { name: "اتصال Discord" }));

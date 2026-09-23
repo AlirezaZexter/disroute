@@ -12,7 +12,7 @@ If no private reporting form is available, do not publish exploit details or cre
 
 Never attach:
 
-- a complete VLESS URI, UUID, Reality key, short ID, or server address;
+- a complete proxy URI, UUID, password, Reality key, short ID, or server address;
 - `profile.dpapi` or `sing-box.json`;
 - unredacted ProxiFyre/sing-box logs;
 - packet captures containing user traffic;
@@ -20,4 +20,4 @@ Never attach:
 
 ## Scope notes
 
-High-value reports include process-rule escapes, unexpected non-Discord routing, local secret exposure, unsafe update or packaging behavior, certificate-validation bypass, and privilege-boundary mistakes. General server availability and third-party VLESS provider performance are not security vulnerabilities.
+High-value reports include process-rule escapes, unexpected non-Discord routing, local secret exposure, unsafe update or packaging behavior, certificate-validation bypass, and privilege-boundary mistakes. General server availability and third-party proxy-provider performance are not security vulnerabilities.
