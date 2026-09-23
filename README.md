@@ -6,7 +6,7 @@
   **Discord-only VLESS routing for Windows — without sending the rest of the system through a VPN.**
 
   [![CI](https://github.com/AlirezaZexter/disroute/actions/workflows/ci.yml/badge.svg)](https://github.com/AlirezaZexter/disroute/actions/workflows/ci.yml)
-  [![Release](https://img.shields.io/github/v/release/AlirezaZexter/disroute?include_prereleases&sort=semver)](https://github.com/AlirezaZexter/disroute/releases/latest)
+  [![Release](https://img.shields.io/github/v/release/AlirezaZexter/disroute?include_prereleases&sort=semver)](https://github.com/AlirezaZexter/disroute/releases)
   [![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white)](https://github.com/AlirezaZexter/disroute/releases)
   [![License: AGPL-3.0](https://img.shields.io/github/license/AlirezaZexter/disroute)](LICENSE)
 
