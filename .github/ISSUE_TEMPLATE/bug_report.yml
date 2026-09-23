@@ -1,0 +1,70 @@
+name: Bug report
+description: Report a reproducible DisRoute problem without sharing credentials.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste a complete VLESS link, UUID, key, server address, runtime configuration, packet capture, or unredacted log.
+  - type: input
+    id: version
+    attributes:
+      label: DisRoute version
+      placeholder: 0.2.6
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2 x64
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Connection startup
+        - Discord launch
+        - Text or media
+        - Voice
+        - Streaming
+        - Tray or lifecycle
+        - Interface
+        - Packaging or setup
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use placeholders for every credential and server value.
+      placeholder: |
+        1. Start DisRoute as Administrator
+        2. Connect with a redacted VLESS link
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and visible error
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed credentials, server addresses, IP addresses, personal paths, and account identifiers.
+          required: true
+        - label: I tested the newest available release in a fresh extracted directory.
+          required: true
