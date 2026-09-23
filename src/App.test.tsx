@@ -13,6 +13,7 @@ describe("DisRoute dashboard", () => {
     expect(screen.getAllByText("Direct")).toHaveLength(2);
     expect(screen.getByRole("heading", { name: "مشخصات VLESS" })).toBeInTheDocument();
     expect(screen.getByText(/مجوز Firewall موردنیاز/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/مسیر دوطرفهٔ شبکه/).querySelectorAll("svg")).toHaveLength(2);
   });
 
   it("announces preview connection failures with text instead of color alone", async () => {

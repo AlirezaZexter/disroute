@@ -24,6 +24,14 @@ function ShieldIcon() {
   );
 }
 
+function BidirectionalRouteIcon() {
+  return (
+    <svg viewBox="0 0 28 12" aria-hidden="true" focusable="false">
+      <path d="M2 6h24M6 2 2 6l4 4M22 2l4 4-4 4" />
+    </svg>
+  );
+}
+
 function StatusHeading({ title, reduced }: { title: string; reduced: boolean }) {
   const present = useIsPresent();
   return <motion.h2 aria-hidden={!present} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : .18 }}>{title}</motion.h2>;
@@ -137,7 +145,7 @@ function App() {
           <h1>DisRoute</h1>
           <p>اتصال VLESS برای Discord</p>
         </div>
-        <span className="version">WINDOWS · 0.2.5 PREVIEW</span>
+        <span className="version">WINDOWS · 0.2.6 PREVIEW</span>
         <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
       </header>
 
@@ -163,8 +171,8 @@ function App() {
             ) : (
               <button className="button button-primary" type="submit" form="connection-form" disabled={loading || busy || !profile.vlessLink}>{busy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
             )}
-          </div><div className="route-map" aria-label="مسیر شبکه">
-          <span>Discord</span><i /><span>Proxy</span><i /><span>Internet</span>
+          </div><div className="route-map" aria-label="مسیر دوطرفهٔ شبکه بین Discord، Proxy و Internet">
+          <span>Discord</span><BidirectionalRouteIcon /><span>Proxy</span><BidirectionalRouteIcon /><span>Internet</span>
         </div></div>
       </section>
 
@@ -206,7 +214,7 @@ function App() {
           </div>
         </aside>
       </div>
-      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر پنجرهٔ Discord باز نشد، از دکمهٔ <bdi dir="ltr">Restart Discord</bdi> استفاده کنید. اتصال DisRoute قطع نمی‌شود. برای تماس صوتی، سرور باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کند.</p></li></ol></motion.section>}</AnimatePresence>
+      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر پنجرهٔ Discord باز نشد، از دکمهٔ <bdi dir="ltr">Restart Discord</bdi> استفاده کنید. اتصال DisRoute قطع نمی‌شود. برای تماس صوتی، سرور باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کند.</p></li><li><strong>استریم روان به آپلود سالم نیاز دارد.</strong><p>اگر صدا وصل است ولی استریم تکه‌تکه می‌شود، یک سرور نزدیک‌تر با پشتیبانی درست از <bdi dir="ltr">UDP/XUDP</bdi> امتحان کنید.</p></li></ol></motion.section>}</AnimatePresence>
       <footer className="app-footer"><span><bdi dir="ltr">Minimize to tray</bdi>: بستن پنجره · خروج کامل: منوی <bdi dir="ltr">Tray</bdi></span><span className="creator-credit">Created by Zexter</span><span dir="ltr">VLESS · TCP + UDP</span></footer>
     </main>
     </LayoutGroup></MotionConfig>

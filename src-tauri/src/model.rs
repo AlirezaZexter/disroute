@@ -18,7 +18,7 @@ impl ProxyProfile {
 
     pub fn proxifyre_config(&self) -> serde_json::Value {
         serde_json::json!({
-            "logLevel": "Info",
+            "logLevel": "Warning",
             "bypassLan": false,
             "proxies": [{
                 "appNames": [
@@ -100,9 +100,21 @@ fn parse_vless_link(value: &str) -> Result<serde_json::Value, String> {
         );
     }
 
+    let packet_encoding = query
+        .get("packetEncoding")
+        .or_else(|| query.get("packet_encoding"))
+        .map(String::as_str)
+        .unwrap_or("xudp");
+    let packet_encoding = match packet_encoding {
+        "" | "none" => "",
+        "xudp" => "xudp",
+        "packetaddr" => "packetaddr",
+        other => return Err(format!("Packet encoding پشتیبانی‌نشده: {other}")),
+    };
+
     let mut outbound = serde_json::json!({
         "type": "vless", "tag": "vless-out", "server": host,
-        "server_port": port, "uuid": uuid, "packet_encoding": "xudp"
+        "server_port": port, "uuid": uuid, "packet_encoding": packet_encoding
     });
     if let Some(flow) = query.get("flow").filter(|v| !v.is_empty()) {
         if flow != "xtls-rprx-vision" {
@@ -188,6 +200,7 @@ mod tests {
     #[test]
     fn generated_config_routes_only_discord_variants() {
         let config = profile().proxifyre_config();
+        assert_eq!(config["logLevel"], "Warning");
         let apps = config["proxies"][0]["appNames"].as_array().unwrap();
         assert!(apps.iter().all(|name| {
             let name = name.as_str().unwrap();
@@ -235,5 +248,35 @@ mod tests {
         assert_eq!(outbound["type"], "vless");
         assert_eq!(outbound["tls"]["reality"]["public_key"], "public-key");
         assert_eq!(outbound["tls"]["insecure"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn respects_packet_encoding_from_share_link() {
+        let mut packetaddr = profile();
+        packetaddr.vless_link = packetaddr
+            .vless_link
+            .replace("#Discord", "&packetEncoding=packetaddr#Discord");
+        assert_eq!(
+            packetaddr.sing_box_config().unwrap()["outbounds"][0]["packet_encoding"],
+            "packetaddr"
+        );
+
+        let mut disabled = profile();
+        disabled.vless_link = disabled
+            .vless_link
+            .replace("#Discord", "&packetEncoding=none#Discord");
+        assert_eq!(
+            disabled.sing_box_config().unwrap()["outbounds"][0]["packet_encoding"],
+            ""
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_packet_encoding() {
+        let mut invalid = profile();
+        invalid.vless_link = invalid
+            .vless_link
+            .replace("#Discord", "&packetEncoding=made-up#Discord");
+        assert!(invalid.validate().is_err());
     }
 }
