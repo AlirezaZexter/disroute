@@ -9,7 +9,7 @@
 
 نام فایل نصبی شبیه این است:
 
-DisRoute-0.4.1-windows-x64-setup.exe
+DisRoute-0.5.0-windows-x64-setup.exe
 
 فایل‌های Source code خود GitHub برنامهٔ آمادهٔ اجرا نیستند.
 

@@ -25,4 +25,10 @@ jobs:
       - run: npm run test
       - run: npm run build
       - run: cargo test --manifest-path src-tauri/Cargo.toml
-
+      - run: npm run prepare:installer
+      - name: Exercise actual isolated engines
+        shell: pwsh
+        run: |
+          $env:DISROUTE_TEST_ENGINE = (Resolve-Path src-tauri/resources/engine/sing-box.exe).Path
+          cargo test --manifest-path src-tauri/Cargo.toml isolated_engine_authentication_and_cleanup -- --ignored
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

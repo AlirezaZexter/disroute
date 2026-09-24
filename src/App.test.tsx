@@ -33,4 +33,15 @@ describe("DisRoute dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "بررسی آپدیت" }));
     await waitFor(() => expect(screen.getByText("نسخه جدیدی منتشر نشده")).toBeInTheDocument());
   });
+
+  it("requires an explicit community warning acknowledgement", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "اتصال سریع رایگان" }));
+    expect(screen.getByRole("alertdialog", { name: "پیش از استفاده بخوانید" })).toBeInTheDocument();
+    const continueButton = screen.getByRole("button", { name: "ادامه" });
+    expect(continueButton).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /این هشدار را خواندم/ }));
+    fireEvent.click(continueButton);
+    await waitFor(() => expect(screen.getByText("مدیریت منابع Community")).toBeInTheDocument());
+  });
 });

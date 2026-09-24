@@ -4,6 +4,20 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-25
+
+### Fixed
+
+- Normalize Tauri verbatim resource paths before passing executable paths to Windows Firewall, and quote netsh arguments correctly. Existing DisRoute rules are updated instead of deleted before replacement.
+- Prepare pinned engine resources for portable builds as well as installers.
+
+### Added
+
+- Optional Persian Community Quick Connect: refresh sources, test through isolated sing-box instances, rank measured Discord HTTPS connectivity, and connect with one click.
+- Public Radikal subscription and CDN mirror, explicit first-use warning, configurable sources, encrypted cached fallback and local history.
+- Rustls HTTPS checks with mandatory SOCKS routing, UDP reporting, preflight before switching, and opt-in failover.
+- Regression coverage for installed Firewall paths, mixed subscriptions, one-click UI flow and actual isolated engine authentication/cleanup.
+
 ## [0.4.1] - 2026-09-24
 
 ### Added

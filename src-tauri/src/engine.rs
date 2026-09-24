@@ -7,7 +7,7 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
-fn hidden_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+pub(crate) fn hidden_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
     let mut command = Command::new(program);
     #[cfg(windows)]
     {
@@ -19,6 +19,7 @@ fn hidden_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
 
 #[derive(Default)]
 pub struct EngineManager {
+    active_profile: Option<ProxyProfile>,
     connection_notice: Option<String>,
     voice_proxy: Option<crate::voice_proxy::VoiceProxy>,
     proxifyre: Option<Child>,
@@ -27,7 +28,7 @@ pub struct EngineManager {
 }
 
 impl EngineManager {
-    fn engine_dir(&self, app: &AppHandle) -> Result<PathBuf, String> {
+    pub(crate) fn engine_dir(&self, app: &AppHandle) -> Result<PathBuf, String> {
         if let Ok(path) = std::env::var("DISROUTE_ENGINE_DIR") {
             return Ok(PathBuf::from(path));
         }
@@ -65,6 +66,7 @@ impl EngineManager {
         let tunnel_running = child_running(&mut self.sing_box);
         let running = proxy_running && tunnel_running && self.voice_proxy.is_some();
         if !running {
+            self.active_profile = None;
             self.connection_notice = None;
             self.voice_proxy.take();
             stop_child(&mut self.proxifyre);
@@ -94,6 +96,32 @@ impl EngineManager {
     }
 
     pub fn start(&mut self, app: &AppHandle, profile: &ProxyProfile) -> Result<AppStatus, String> {
+        let previous = self.active_profile.clone();
+        match self.start_inner(app, profile) {
+            Ok(status) => {
+                self.active_profile = Some(profile.clone());
+                Ok(status)
+            }
+            Err(error) => {
+                if let Some(previous) = previous {
+                    if previous.config_link != profile.config_link
+                        && self.start_inner(app, &previous).is_ok()
+                    {
+                        self.active_profile = Some(previous);
+                        return Err(format!("{error} اتصال قبلی دوباره برقرار شد."));
+                    }
+                }
+                self.active_profile = None;
+                Err(error)
+            }
+        }
+    }
+
+    fn start_inner(
+        &mut self,
+        app: &AppHandle,
+        profile: &ProxyProfile,
+    ) -> Result<AppStatus, String> {
         if self.proxifyre.is_some() || self.sing_box.is_some() || self.voice_proxy.is_some() {
             self.stop(app)?;
         }
@@ -214,6 +242,7 @@ impl EngineManager {
     }
 
     pub fn stop(&mut self, app: &AppHandle) -> Result<AppStatus, String> {
+        self.active_profile = None;
         self.connection_notice = None;
         self.voice_proxy.take();
         stop_child(&mut self.proxifyre);
@@ -342,49 +371,68 @@ fn is_http_response(value: &[u8]) -> bool {
 
 #[cfg(windows)]
 fn ensure_firewall_rules(program: &std::path::Path) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+
     let program = program
         .to_str()
         .ok_or("مسیر ProxiFyre برای Firewall معتبر نیست.")?;
+    let program = firewall_program(program)?;
     for (name, protocol) in [
         ("DisRoute ProxiFyre TCP", "TCP"),
         ("DisRoute ProxiFyre UDP", "UDP"),
     ] {
-        let name_arg = format!("name={name}");
-        let program_arg = format!("program={program}");
-        let protocol_arg = format!("protocol={protocol}");
+        // Command::args can be re-tokenized by netsh on Windows when an
+        // argument itself contains spaces. raw_arg preserves the quoting that
+        // netsh documents for rule names and executable paths.
         let exists = hidden_command("netsh.exe")
-            .args(["advfirewall", "firewall", "show", "rule", &name_arg])
+            .raw_arg(format!("advfirewall firewall show rule name=\"{name}\""))
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()
-            .map(|status| status.success())
-            .unwrap_or(false);
-        let operation = if exists { "set" } else { "add" };
-        let mut args = vec!["advfirewall", "firewall", operation, "rule", &name_arg];
-        if exists {
-            args.push("new");
-        }
-        args.extend([
-            "dir=in",
-            "action=allow",
-            &program_arg,
-            "enable=yes",
-            "profile=any",
-            &protocol_arg,
-        ]);
+            .is_ok_and(|status| status.success());
+        let operation = if exists {
+            format!("set rule name=\"{name}\" new")
+        } else {
+            format!("add rule name=\"{name}\"")
+        };
+        let add_args = format!(
+            "advfirewall firewall {operation} dir=in action=allow program=\"{program}\" enable=yes profile=any protocol={protocol}"
+        );
         let result = hidden_command("netsh.exe")
-            .args(args)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
+            .raw_arg(add_args)
+            .output()
             .map_err(|e| format!("اجرای تنظیم Firewall ناموفق بود: {e}"))?;
-        if !result.success() {
+        if !result.status.success() {
+            let detail = String::from_utf8_lossy(if result.stderr.is_empty() {
+                &result.stdout
+            } else {
+                &result.stderr
+            });
             return Err(format!(
-                "ساخت مجوز Firewall برای {protocol} ناموفق بود. برنامه را با Run as administrator اجرا کنید."
+                "ساخت مجوز Firewall برای {protocol} ناموفق بود: {}",
+                detail.trim()
             ));
         }
     }
     Ok(())
+}
+
+// Tauri's resource resolver can return a verbatim (\\?\) filesystem path.
+// CreateProcess accepts it, but Windows Firewall's application parser does not.
+fn firewall_program(value: &str) -> Result<String, String> {
+    let value = value.strip_prefix(r"\\?\").unwrap_or(value);
+    let bytes = value.as_bytes();
+    if bytes.len() < 4
+        || !bytes[0].is_ascii_alphabetic()
+        || &bytes[1..3] != b":\\"
+        || value
+            .chars()
+            .any(|c| c.is_control() || matches!(c, '"' | '*' | '?' | '<' | '>' | '|'))
+        || value.encode_utf16().count() >= 260
+    {
+        return Err("مسیر موتور برای Firewall معتبر نیست. برنامه را در یک مسیر کوتاه روی درایو محلی نصب کنید.".into());
+    }
+    Ok(value.to_owned())
 }
 
 #[cfg(not(windows))]
@@ -427,6 +475,40 @@ fn is_elevated() -> bool {
 #[cfg(test)]
 mod tests {
     use super::is_http_response;
+
+    #[test]
+    #[ignore = "requires elevation; updates only DisRoute ProxiFyre TCP/UDP rules"]
+    fn installed_firewall_roundtrip() {
+        let path =
+            std::env::var_os("DISROUTE_FIREWALL_TEST_PROGRAM").expect("set test program path");
+        let path = std::fs::canonicalize(path).unwrap();
+        super::ensure_firewall_rules(&path).unwrap();
+        super::ensure_firewall_rules(&path).unwrap();
+    }
+
+    #[test]
+    fn firewall_accepts_tauri_verbatim_drive_paths() {
+        assert_eq!(
+            super::firewall_program(r"\\?\C:\Program Files\DisRoute\ProxiFyre.exe").unwrap(),
+            r"C:\Program Files\DisRoute\ProxiFyre.exe"
+        );
+        assert_eq!(
+            super::firewall_program(r"C:\Users\کاربر\DisRoute\ProxiFyre.exe").unwrap(),
+            r"C:\Users\کاربر\DisRoute\ProxiFyre.exe"
+        );
+    }
+
+    #[test]
+    fn firewall_rejects_device_relative_and_injected_paths() {
+        for path in [
+            r"\\.\PhysicalDrive0",
+            r"engine\ProxiFyre.exe",
+            "C:\\bad\"path.exe",
+            "C:\\bad\npath.exe",
+        ] {
+            assert!(super::firewall_program(path).is_err());
+        }
+    }
 
     #[test]
     fn accepts_reachable_discord_http_responses() {

@@ -29,13 +29,17 @@ Some networks cannot reach Discord reliably, while routing the whole computer th
 - Persian RTL interface, tray lifecycle, keyboard access, and reduced-motion support
 - Installer and portable Windows builds with pinned and SHA256-verified engines
 - Signed in-app updates published through GitHub Releases
+- Optional Community Quick Connect with configurable GitHub, subscription, local-file, and HTTPS sources
+- Isolated sing-box health checks, Discord HTTPS latency ranking, UDP reporting, cached fallback, and bounded failover
+
+The community manifest format and source model are documented in [Community sources](docs/COMMUNITY_SOURCES.md). The optional source registry includes public MIT-licensed subscriptions from Radikal and Au1rxx, plus a CDN mirror. Credentials are fetched at runtime, never bundled. Availability and latency depend on the local network and third-party endpoints.
 
 ## Quick start
 
 1. Open [Releases](https://github.com/AlirezaZexter/disroute/releases) and download the Windows x64 setup file, not GitHub's source archive.
 2. If Windows Packet Filter is not installed, download the portable fallback once and run its included ProxiFyre prerequisite installer.
 3. Install DisRoute and start it as Administrator.
-4. Paste your own VLESS, VMess, Trojan, or Shadowsocks share link and connect.
+4. Paste your own VLESS, VMess, Trojan, or Shadowsocks share link, or choose **اتصال سریع رایگان**, acknowledge the third-party warning, and connect. Community mode refreshes, tests and ranks before connecting.
 5. Future releases can be checked and installed from the **بررسی آپدیت** button inside the app.
 
 The package includes a Persian text guide. WebView2, the Microsoft Visual C++ x64 runtime, and Windows Packet Filter are required.

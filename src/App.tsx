@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { connect, disconnect, getStatus, saveProfile, loadProfile, forgetProfile, hideToTray, restartDiscord } from "./api";
+import { cancelCommunityScan, clearCommunityData, connect, connectCommunity, disconnect, getCommunitySnapshot, getStatus, saveCommunitySources, saveProfile, loadProfile, forgetProfile, hideToTray, refreshCommunity, restartDiscord, scanCommunity, setCommunityPreferences } from "./api";
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion, useIsPresent } from "motion/react";
-import type { AppStatus, ProxyProfile } from "./types";
+import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile } from "./types";
 import { downloadAndInstall, findUpdate, type UpdateProgress } from "./updater";
 import type { Update } from "@tauri-apps/plugin-updater";
 
@@ -28,6 +28,12 @@ const emptyStatus: AppStatus = {
   isElevated: false,
   message: "در حال بررسی موتور…",
 };
+
+const emptyCommunity: CommunitySnapshot = { sources: [], candidates: [], stale: false, acknowledgedWarning: false, automaticFailover: true };
+const labelFa: Record<HealthResult["label"], string> = { Working: "فعال", Fast: "سریع", Unstable: "ناپایدار", "UDP unavailable": "بدون UDP", Untested: "آزمایش‌نشده", Offline: "خارج از دسترس" };
+
+function sourceId() { return `source-${Date.now().toString(36)}`; }
+function formatTime(value?: number | null) { return value ? new Intl.DateTimeFormat("fa-IR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value * 1000)) : "هنوز نوسازی نشده"; }
 
 function ShieldIcon() {
   return (
@@ -64,6 +70,13 @@ function App() {
   const [configTouched, setConfigTouched] = useState(false);
   const [confirmForget, setConfirmForget] = useState(false);
   const [view, setView] = useState<"connection" | "guide">("connection");
+  const [connectionMode, setConnectionMode] = useState<"personal" | "community">("personal");
+  const [community, setCommunity] = useState<CommunitySnapshot>(emptyCommunity);
+  const [communityResults, setCommunityResults] = useState<HealthResult[]>([]);
+  const [communityBusy, setCommunityBusy] = useState<"" | "refresh" | "scan" | "connect">("");
+  const [communityError, setCommunityError] = useState("");
+  const [warningChecked, setWarningChecked] = useState(false);
+  const [sourceDraft, setSourceDraft] = useState({ name: "", location: "", attribution: "", kind: "url" as CommunitySource["kind"], refreshIntervalMinutes: 60, timeoutSeconds: 12, expectedSha256: "", redistributionAuthorized: false });
   const [updatePhase, setUpdatePhase] = useState<"idle" | "checking" | "available" | "current" | "downloading" | "installing" | "error">("idle");
   const [updateInfo, setUpdateInfo] = useState<{ version: string; notes?: string } | null>(null);
   const [updateProgress, setUpdateProgress] = useState<UpdateProgress>({ downloaded: 0 });
@@ -90,6 +103,7 @@ function App() {
       if (value) { setProfile(value); setSaved(true); setNotice("پروفایل ذخیره‌شده بازیابی شد."); }
     }).catch(() => setNotice("بازیابی پروفایل ممکن نشد؛ کانفیگ را دوباره وارد و ذخیره کنید."))
       .finally(() => setLoading(false));
+    getCommunitySnapshot().then(setCommunity).catch(() => setCommunityError("خواندن تنظیمات اتصال سریع ممکن نشد."));
   }, []);
 
   useEffect(() => {
@@ -142,6 +156,66 @@ function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function acknowledgeCommunity() {
+    if (!warningChecked) return;
+    try { setCommunity(await setCommunityPreferences(true, community.automaticFailover)); }
+    catch (error) { setCommunityError(String(error)); }
+  }
+
+  async function updateFailover(enabled: boolean) {
+    try { setCommunity(await setCommunityPreferences(community.acknowledgedWarning, enabled)); }
+    catch (error) { setCommunityError(String(error)); }
+  }
+
+  async function addSource() {
+    const source: CommunitySource = { id: sourceId(), ...sourceDraft, expectedSha256: sourceDraft.expectedSha256 || null, enabled: true };
+    try {
+      setCommunity(await saveCommunitySources([...community.sources, source]));
+      setSourceDraft({ name: "", location: "", attribution: "", kind: "url", refreshIntervalMinutes: 60, timeoutSeconds: 12, expectedSha256: "", redistributionAuthorized: false });
+      setCommunityError("");
+    } catch (error) { setCommunityError(String(error)); }
+  }
+
+  async function replaceSources(sources: CommunitySource[]) {
+    try { setCommunity(await saveCommunitySources(sources)); setCommunityError(""); }
+    catch (error) { setCommunityError(String(error)); }
+  }
+
+  async function handleCommunityRefresh() {
+    setCommunityBusy("refresh"); setCommunityError(""); setCommunityResults([]);
+    try { setCommunity(await refreshCommunity()); }
+    catch (error) { setCommunityError(String(error)); }
+    finally { setCommunityBusy(""); }
+  }
+
+  async function handleCommunityScan() {
+    setCommunityBusy("scan"); setCommunityError(""); setCommunityResults([]);
+    try { setCommunityResults(await scanCommunity()); }
+    catch (error) { setCommunityError(String(error)); }
+    finally { setCommunityBusy(""); }
+  }
+
+  async function handleCommunityConnect(event: FormEvent) {
+    event.preventDefault();
+    if (!community.acknowledgedWarning || communityBusy) return;
+    setCommunityError("");
+    try {
+      setCommunityBusy("refresh");
+      const snapshot = await refreshCommunity();
+      setCommunity(snapshot);
+      if (!snapshot.candidates.length) throw new Error("منابع فعلی کانفیگ قابل‌آزمایشی ندارند. وضعیت منابع را بررسی کنید.");
+      setCommunityBusy("scan");
+      const results = await scanCommunity();
+      setCommunityResults(results);
+      const healthy = results.filter((result) => result.working).map((result) => result.candidateId);
+      if (!healthy.length) throw new Error("در این آزمایش هیچ اتصال فعالی به Discord پیدا نشد. بعداً دوباره امتحان کنید.");
+      setCommunityBusy("connect");
+      setAppStatus(await connectCommunity(healthy));
+    }
+    catch (error) { setCommunityError(String(error)); }
+    finally { setCommunityBusy(""); }
   }
 
   async function handleRestartDiscord() {
@@ -213,7 +287,7 @@ function App() {
           <p>مسیریابی اختصاصی Discord</p>
         </div>
         <div className="header-actions">
-          <span className="version">WINDOWS · 0.4.1 PREVIEW</span>
+          <span className="version">WINDOWS · 0.5.0 PREVIEW</span>
           <button className="text-button update-check-button" type="button" disabled={checkingUpdate || updating} onClick={handleCheckUpdates}>{checkingUpdate ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}</button>
           <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
         </div>
@@ -259,7 +333,7 @@ function App() {
             {connected ? (
               <><button className="button button-secondary" type="button" onClick={handleRestartDiscord} disabled={busy || discordBusy}>{discordBusy ? "در حال اجرا…" : "Restart Discord"}</button><button className="button button-danger" type="button" onClick={handleDisconnect} disabled={busy || discordBusy}>قطع اتصال</button></>
             ) : (
-              <button className="button button-primary" type="submit" form="connection-form" disabled={loading || busy || !hasConfig || unsupportedConfig}>{busy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
+              <button className="button button-primary" type="submit" form={connectionMode === "personal" ? "connection-form" : "community-form"} disabled={connectionMode === "personal" ? loading || busy || !hasConfig || unsupportedConfig : communityBusy !== "" || !community.acknowledgedWarning || !community.sources.some((source) => source.enabled)}>{busy || communityBusy ? "لطفاً صبر کنید…" : "اتصال Discord"}</button>
             )}
           </div><div className="route-map" aria-label="مسیر دوطرفهٔ شبکه بین Discord، Proxy و Internet">
           <span>Discord</span><BidirectionalRouteIcon /><span>Proxy</span><BidirectionalRouteIcon /><span>Internet</span>
@@ -267,6 +341,12 @@ function App() {
       </section>
 
       <div className="content-grid" hidden={view !== 'connection'}>
+        <div className="mode-column">
+        <nav className="mode-switch" aria-label="روش اتصال">
+          <button type="button" aria-pressed={connectionMode === "personal"} onClick={() => setConnectionMode("personal")}>کانفیگ شخصی</button>
+          <button type="button" aria-pressed={connectionMode === "community"} onClick={() => setConnectionMode("community")}>اتصال سریع رایگان</button>
+        </nav>
+        {connectionMode === "personal" ? (
         <form id="connection-form" className="panel" onSubmit={handleSubmit}>
           <div className="panel-heading">
             <div><span className="eyebrow">پروفایل اتصال</span><h2>کانفیگ پروکسی</h2></div>
@@ -289,6 +369,28 @@ function App() {
           {confirmForget && <div className="delete-confirm"><p>کانفیگ ذخیره‌شده حذف شود؟ برای اتصال بعدی باید دوباره واردش کنید.</p><button className="text-button danger-text" type="button" disabled={busy} onClick={handleForget}>بله، حذف شود</button><button className="text-button" type="button" onClick={() => setConfirmForget(false)}>انصراف</button></div>}
           <p className="privacy-note" role="status">{notice || 'لینک کانفیگ را وارد کنید.'}</p>
         </form>
+        ) : (
+          <form id="community-form" className="panel community-panel" noValidate onSubmit={handleCommunityConnect}>
+            <div className="panel-heading"><div><span className="eyebrow">COMMUNITY</span><h2>اتصال سریع رایگان</h2></div>{community.stale && <span className="stale-badge">کش قدیمی</span>}</div>
+            {!community.acknowledgedWarning ? <div className="community-warning" role="alertdialog" aria-labelledby="community-warning-title">
+              <strong id="community-warning-title">پیش از استفاده بخوانید</strong>
+              <p>اتصال‌های رایگان توسط اشخاص ثالث ارائه می‌شوند. Disroute مالک یا مدیر این سرورها نیست و امنیت، پایداری یا حریم خصوصی آن‌ها را تضمین نمی‌کند.</p>
+              <label className="remember-option"><input type="checkbox" checked={warningChecked} onChange={(event) => setWarningChecked(event.target.checked)} /><span>این هشدار را خواندم و می‌پذیرم.</span></label>
+              <button className="button button-primary" type="button" disabled={!warningChecked} onClick={acknowledgeCommunity}>ادامه</button>
+            </div> : <>
+              <div className="community-toolbar"><div><span>آخرین نوسازی</span><strong>{formatTime(community.refreshedAt)}</strong></div><button className="button button-secondary compact" type="button" disabled={communityBusy !== "" || !community.sources.some((source) => source.enabled)} onClick={handleCommunityRefresh}>{communityBusy === "refresh" ? "در حال دریافت…" : "نوسازی منابع"}</button><button className="button button-primary compact" type="button" disabled={communityBusy !== "" || community.candidates.length === 0} onClick={handleCommunityScan}>{communityBusy === "scan" ? "در حال آزمایش…" : "آزمایش اتصال‌ها"}</button>{communityBusy === "scan" && <button className="text-button" type="button" onClick={() => cancelCommunityScan()}>لغو</button>}</div>
+              <label className="remember-option"><input type="checkbox" checked={community.automaticFailover} onChange={(event) => updateFailover(event.target.checked)} /><span>تلاش خودکار با گزینهٔ سالم بعدی<small>در صورت شکست اتصال، حداکثر پنج گزینهٔ آزمایش‌شده بررسی می‌شوند.</small></span></label>
+              {communityResults.length > 0 && <section className="best-candidate" aria-live="polite"><span className="eyebrow">بهترین گزینهٔ فعلی</span>{communityResults[0].working ? <><div className="candidate-title"><strong>{communityResults[0].sourceName}</strong><span>{labelFa[communityResults[0].label]}</span></div><dl><div><dt>زمان اتصال</dt><dd><bdi dir="ltr">{communityResults[0].medianLatencyMs} ms</bdi></dd></div><div><dt>پایداری</dt><dd>{Math.round((1 - communityResults[0].failureRate) * 100)}٪</dd></div><div><dt>وویس Discord</dt><dd>{communityResults[0].udpAvailable ? "UDP فعال" : "تأیید نشده"}</dd></div></dl><small>منبع: {communityResults[0].attribution}</small></> : <p>در این آزمایش اتصال فعالی پیدا نشد.</p>}</section>}
+              <details className="source-manager" open={community.sources.length === 0}><summary>مدیریت منابع Community</summary>
+                {community.sources.length === 0 && <p className="empty-state">هیچ منبعی به‌صورت پیش‌فرض اضافه نشده است. فقط منبعی را ثبت کنید که ارائه‌دهنده‌اش اجازهٔ بازنشر داده باشد.</p>}
+                <ul className="source-list">{community.sources.map((source) => <li key={source.id}><label className="source-toggle"><input type="checkbox" checked={source.enabled} onChange={(event) => replaceSources(community.sources.map((item) => item.id === source.id ? { ...item, enabled: event.target.checked } : item))} /><span><strong>{source.name}</strong><small>{source.attribution} · {formatTime(source.lastSuccessfulRefresh)}</small>{source.lastError && <em>{source.lastError}</em>}</span></label><button className="text-button danger-text" type="button" onClick={() => replaceSources(community.sources.filter((item) => item.id !== source.id))}>حذف</button></li>)}</ul>
+                <div className="source-form"><label><span>نوع منبع</span><select value={sourceDraft.kind} onChange={(event) => setSourceDraft({ ...sourceDraft, kind: event.target.value as CommunitySource["kind"] })}><option value="url">JSON manifest</option><option value="githubRaw">GitHub Raw</option><option value="githubRelease">GitHub release asset</option><option value="subscription">Subscription URL</option><option value="localFile">فایل محلی</option></select></label><label><span>نام منبع</span><input required value={sourceDraft.name} onChange={(event) => setSourceDraft({ ...sourceDraft, name: event.target.value })} /></label><label><span>نشانی یا مسیر</span><input required dir="ltr" value={sourceDraft.location} onChange={(event) => setSourceDraft({ ...sourceDraft, location: event.target.value.trim() })} /></label><label><span>نام ارائه‌دهنده</span><input required value={sourceDraft.attribution} onChange={(event) => setSourceDraft({ ...sourceDraft, attribution: event.target.value })} /></label><label><span>فاصلهٔ نوسازی (دقیقه)</span><input type="number" min={5} max={10080} value={sourceDraft.refreshIntervalMinutes} onChange={(event) => setSourceDraft({ ...sourceDraft, refreshIntervalMinutes: Number(event.target.value) })} /></label><label><span>مهلت دریافت (ثانیه)</span><input type="number" min={5} max={120} value={sourceDraft.timeoutSeconds} onChange={(event) => setSourceDraft({ ...sourceDraft, timeoutSeconds: Number(event.target.value) })} /></label><label className="full-field"><span>SHA-256 فایل (اختیاری)</span><input dir="ltr" maxLength={64} value={sourceDraft.expectedSha256} onChange={(event) => setSourceDraft({ ...sourceDraft, expectedSha256: event.target.value.trim() })} /></label><label className="remember-option full-field"><input type="checkbox" checked={sourceDraft.redistributionAuthorized} onChange={(event) => setSourceDraft({ ...sourceDraft, redistributionAuthorized: event.target.checked })} /><span>ارائه‌دهنده اجازهٔ بازنشر این فهرست را داده است.</span></label><button className="button button-secondary" type="button" disabled={!sourceDraft.name || !sourceDraft.location || !sourceDraft.attribution || !sourceDraft.redistributionAuthorized} onClick={addSource}>افزودن منبع مجاز</button></div>
+              </details>
+              <div className="community-footer"><p role="status" className="community-error">{communityError || `${community.candidates.length.toLocaleString("fa-IR")} کانفیگ در کش موجود است.`}</p><button className="text-button danger-text" type="button" onClick={async () => { setCommunity(await clearCommunityData()); setCommunityResults([]); }}>پاک‌کردن کش و سابقه</button></div>
+            </>}
+          </form>
+        )}
+        </div>
 
         <aside className="panel side-panel">
           <div className="panel-heading"><div><span className="eyebrow">مسیر برنامه‌ها</span><h2>فقط Discord</h2></div></div>

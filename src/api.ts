@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppStatus, ProxyProfile } from "./types";
+import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile } from "./types";
 
 const browserFallback: AppStatus = {
   status: "disconnected",
@@ -44,4 +44,44 @@ export async function disconnect(): Promise<AppStatus> {
 export async function restartDiscord(): Promise<string> {
   if (!isTauri()) throw new Error("Restart Discord فقط در نسخهٔ ویندوز در دسترس است.");
   return invoke<string>("restart_discord");
+}
+
+const emptyCommunity: CommunitySnapshot = { sources: [], candidates: [], stale: false, acknowledgedWarning: false, automaticFailover: true };
+
+export async function getCommunitySnapshot(): Promise<CommunitySnapshot> {
+  return isTauri() ? invoke("community_snapshot") : emptyCommunity;
+}
+
+export async function saveCommunitySources(sources: CommunitySource[]): Promise<CommunitySnapshot> {
+  if (!isTauri()) return { ...emptyCommunity, sources };
+  return invoke("save_community_sources", { sources });
+}
+
+export async function setCommunityPreferences(acknowledgedWarning: boolean, automaticFailover: boolean): Promise<CommunitySnapshot> {
+  if (!isTauri()) return { ...emptyCommunity, acknowledgedWarning, automaticFailover };
+  return invoke("set_community_preferences", { acknowledgedWarning, automaticFailover });
+}
+
+export async function refreshCommunity(): Promise<CommunitySnapshot> {
+  if (!isTauri()) return emptyCommunity;
+  return invoke("refresh_community");
+}
+
+export async function scanCommunity(): Promise<HealthResult[]> {
+  if (!isTauri()) return [];
+  return invoke("scan_community");
+}
+
+export async function cancelCommunityScan(): Promise<void> {
+  if (isTauri()) await invoke("cancel_community_scan");
+}
+
+export async function clearCommunityData(): Promise<CommunitySnapshot> {
+  if (!isTauri()) return emptyCommunity;
+  return invoke("clear_community_data");
+}
+
+export async function connectCommunity(candidateIds: string[]): Promise<AppStatus> {
+  if (!isTauri()) return { ...browserFallback, status: "error" };
+  return invoke("connect_community", { candidateIds });
 }

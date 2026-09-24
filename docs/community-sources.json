@@ -1,0 +1,46 @@
+[
+  {
+    "id": "au1rxx-nl",
+    "name": "Au1rxx · Netherlands",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main/output/by-country/v2ray-base64-NL.txt",
+    "attribution": "Au1rxx/free-vpn-subscriptions · MIT · https://github.com/Au1rxx/free-vpn-subscriptions",
+    "enabled": true,
+    "refreshIntervalMinutes": 60,
+    "timeoutSeconds": 15,
+    "redistributionAuthorized": true
+  },
+  {
+    "id": "au1rxx-de",
+    "name": "Au1rxx · Germany",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main/output/by-country/v2ray-base64-DE.txt",
+    "attribution": "Au1rxx/free-vpn-subscriptions · MIT · https://github.com/Au1rxx/free-vpn-subscriptions",
+    "enabled": true,
+    "refreshIntervalMinutes": 60,
+    "timeoutSeconds": 15,
+    "redistributionAuthorized": true
+  },
+  {
+    "id": "radikal-top100",
+    "name": "Radikal · Top 100",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/top100.txt",
+    "attribution": "0xRadikal/Free-v2ray-Configs · MIT · https://github.com/0xRadikal/Free-v2ray-Configs",
+    "enabled": true,
+    "refreshIntervalMinutes": 15,
+    "timeoutSeconds": 15,
+    "redistributionAuthorized": true
+  },
+  {
+    "id": "radikal-top100-mirror",
+    "name": "Radikal · CDN mirror",
+    "kind": "subscription",
+    "location": "https://cdn.jsdelivr.net/gh/0xRadikal/Free-v2ray-Configs@main/top100.txt",
+    "attribution": "Mirror of 0xRadikal/Free-v2ray-Configs · MIT",
+    "enabled": true,
+    "refreshIntervalMinutes": 15,
+    "timeoutSeconds": 15,
+    "redistributionAuthorized": true
+  }
+]

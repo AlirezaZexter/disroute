@@ -1,5 +1,7 @@
 # Third-party notices
 
+Community source URLs refer to the MIT-licensed public subscription projects [0xRadikal/Free-v2ray-Configs](https://github.com/0xRadikal/Free-v2ray-Configs/blob/main/LICENSE) and [Au1rxx/free-vpn-subscriptions](https://github.com/Au1rxx/free-vpn-subscriptions/blob/main/LICENSE). No proxy credentials or upstream code are bundled. Attribution is shown per source; source licensing does not guarantee endpoint privacy, ownership, uptime or performance.
+
 Portable releases bundle unmodified versions of these engines:
 
 - **ProxiFyre 2.6.1** — Copyright its contributors; AGPL-3.0; source: https://github.com/wiresock/proxifyre/tree/v2.6.1

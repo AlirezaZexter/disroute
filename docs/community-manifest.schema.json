@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AlirezaZexter/disroute/blob/main/docs/community-manifest.schema.json",
+  "title": "DisRoute Community Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "source", "configurations"],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "generatedAt": { "type": "integer", "minimum": 0 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "url"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "url": { "type": "string", "maxLength": 2048 }
+      }
+    },
+    "configurations": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "uri", "protocol"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "uri": { "type": "string", "minLength": 1, "maxLength": 16384 },
+          "protocol": { "enum": ["vless", "vmess", "trojan", "shadowsocks"] },
+          "country": { "type": "string", "maxLength": 32 },
+          "supportsUdp": { "type": "boolean" },
+          "addedAt": { "type": "integer", "minimum": 0 },
+          "expiresAt": { "type": "integer", "minimum": 0 },
+          "source": { "type": "string", "maxLength": 240 },
+          "checksum": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" }
+        }
+      }
+    }
+  }
+}

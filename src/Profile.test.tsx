@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import * as api from "./api";
 import App from "./App";
 
-vi.mock('./api', () => ({ getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined), restartDiscord: vi.fn() }));
+vi.mock('./api', () => ({ getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined), restartDiscord: vi.fn(), getCommunitySnapshot: vi.fn(), saveCommunitySources: vi.fn(), setCommunityPreferences: vi.fn(), refreshCommunity: vi.fn(), scanCommunity: vi.fn(), cancelCommunityScan: vi.fn(), clearCommunityData: vi.fn(), connectCommunity: vi.fn() }));
 const profile = { name: 'My route', configLink: 'vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls' };
 const status = { status: 'disconnected' as const, engineReady: true, isElevated: true, message: 'ready' };
 beforeEach(() => {
@@ -15,8 +15,26 @@ beforeEach(() => {
   vi.mocked(api.forgetProfile).mockResolvedValue();
   vi.mocked(api.connect).mockResolvedValue({ ...status, status: 'connected' });
   vi.mocked(api.restartDiscord).mockResolvedValue('Discord دوباره اجرا شد.');
+  vi.mocked(api.getCommunitySnapshot).mockResolvedValue({ sources: [], candidates: [], stale: false, acknowledgedWarning: false, automaticFailover: true });
 });
 afterEach(cleanup);
+it('refreshes and tests before one-click community connection without a personal config', async () => {
+  vi.mocked(api.loadProfile).mockResolvedValue(null);
+  const snapshot = { sources: [{ id: 'test', name: 'test source', location: 'https://example.org/sub', attribution: 'test', kind: 'subscription' as const, enabled: true, refreshIntervalMinutes: 15, timeoutSeconds: 12, redistributionAuthorized: true }], candidates: [{ id: 'a', sourceId: 'test', sourceName: 'test', attribution: 'test', uri: '', protocol: 'vless' }], stale: false, acknowledgedWarning: true, automaticFailover: false };
+  vi.mocked(api.getCommunitySnapshot).mockResolvedValue(snapshot);
+  vi.mocked(api.refreshCommunity).mockResolvedValue(snapshot);
+  vi.mocked(api.scanCommunity).mockResolvedValue([{ candidateId: 'a', sourceId: 'test', sourceName: 'test', attribution: 'test', protocol: 'vless', working: true, medianLatencyMs: 120, jitterMs: 2, failureRate: 0, udpAvailable: true, label: 'Fast', score: 100 }]);
+  vi.mocked(api.connectCommunity).mockResolvedValue({ ...status, status: 'connected' });
+  render(<App />);
+  await waitFor(() => expect(api.loadProfile).toHaveBeenCalled());
+  fireEvent.click(screen.getByRole('button', { name: 'اتصال سریع رایگان' }));
+  const button = screen.getByRole('button', { name: 'اتصال Discord' });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  await waitFor(() => expect(api.connectCommunity).toHaveBeenCalledWith(['a']));
+  expect(vi.mocked(api.refreshCommunity).mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(api.scanCommunity).mock.invocationCallOrder[0]);
+  expect(api.connect).not.toHaveBeenCalled();
+});
 it('restores a masked profile and saves it before connection', async () => {
   render(<App />);
   await waitFor(() => expect(screen.getByDisplayValue(profile.configLink)).toHaveAttribute('type', 'password'));

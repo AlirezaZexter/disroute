@@ -2,8 +2,19 @@ use base64::{engine::general_purpose, Engine as _};
 use percent_encoding::percent_decode_str;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::net::IpAddr;
 
 const OUTBOUND_TAG: &str = "proxy-out";
+const MAX_CONFIG_LINK: usize = 16 * 1024;
+const MAX_PROFILE_NAME: usize = 120;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProxyEndpoint {
+    pub host: String,
+    pub port: u16,
+    pub protocol: String,
+    pub supports_udp: bool,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,11 +26,39 @@ pub struct ProxyProfile {
 
 impl ProxyProfile {
     pub fn validate(&self) -> Result<(), String> {
-        if self.name.trim().is_empty() {
+        let name = self.name.trim();
+        if name.is_empty() {
             return Err("نام پروفایل نمی‌تواند خالی باشد.".into());
+        }
+        if name.chars().count() > MAX_PROFILE_NAME {
+            return Err("نام پروفایل بیش از حد طولانی است.".into());
+        }
+        if self.config_link.len() > MAX_CONFIG_LINK {
+            return Err("لینک کانفیگ بیش از حد بزرگ است.".into());
         }
         parse_proxy_link(&self.config_link)?;
         Ok(())
+    }
+
+    pub fn endpoint(&self, allow_private: bool) -> Result<ProxyEndpoint, String> {
+        self.validate()?;
+        let outbound = parse_proxy_link(&self.config_link)?;
+        let host = outbound["server"]
+            .as_str()
+            .ok_or("آدرس سرور در کانفیگ وجود ندارد.")?
+            .to_owned();
+        validate_endpoint_host(&host, allow_private)?;
+        let port = outbound["server_port"]
+            .as_u64()
+            .and_then(|value| u16::try_from(value).ok())
+            .ok_or("پورت سرور معتبر نیست.")?;
+        let protocol = outbound["type"].as_str().unwrap_or_default().to_owned();
+        Ok(ProxyEndpoint {
+            host,
+            port,
+            protocol,
+            supports_udp: true,
+        })
     }
 
     pub fn proxifyre_config(&self) -> serde_json::Value {
@@ -43,6 +82,10 @@ impl ProxyProfile {
     }
 
     pub fn sing_box_config(&self) -> Result<serde_json::Value, String> {
+        self.sing_box_config_for_port(2081)
+    }
+
+    pub fn sing_box_config_for_port(&self, listen_port: u16) -> Result<serde_json::Value, String> {
         let outbound = parse_proxy_link(&self.config_link)?;
         // ISP DNS may return a private block-page IP. Recover only known
         // Discord TLS names, then let the remote proxy resolve the real host.
@@ -69,7 +112,7 @@ impl ProxyProfile {
             "log": { "level": "info", "timestamp": true },
             "inbounds": [{
                 "type": "mixed", "tag": "discord-local", "listen": "127.0.0.1",
-                "listen_port": 2081, "set_system_proxy": false
+                "listen_port": listen_port, "set_system_proxy": false
             }],
             "outbounds": [outbound],
             "route": { "final": OUTBOUND_TAG, "auto_detect_interface": true, "rules": rules }
@@ -81,6 +124,9 @@ fn parse_proxy_link(value: &str) -> Result<serde_json::Value, String> {
     let value = value.trim();
     if value.is_empty() {
         return Err("کانفیگ اتصال خالی است.".into());
+    }
+    if value.len() > MAX_CONFIG_LINK {
+        return Err("لینک کانفیگ بیش از حد بزرگ است.".into());
     }
     let scheme = value
         .split_once("://")
@@ -139,6 +185,7 @@ fn parse_trojan_link(value: &str) -> Result<serde_json::Value, String> {
     if password.is_empty() {
         return Err("رمز Trojan در لینک وجود ندارد.".into());
     }
+    validate_field(&password, 512, "رمز Trojan")?;
     let host = required_host(&url)?;
     let port = required_port(&url)?;
     let query = query_map(&url);
@@ -258,6 +305,8 @@ fn parse_shadowsocks_link(value: &str) -> Result<serde_json::Value, String> {
     if method.is_empty() || password.is_empty() {
         return Err("روش رمزنگاری یا رمز Shadowsocks وجود ندارد.".into());
     }
+    validate_field(&method, 64, "روش رمزنگاری Shadowsocks")?;
+    validate_field(&password, 512, "رمز Shadowsocks")?;
     Ok(serde_json::json!({
         "type": "shadowsocks", "tag": OUTBOUND_TAG, "server": host,
         "server_port": port, "method": method, "password": password
@@ -339,6 +388,8 @@ fn apply_transport(
     path: &str,
     host: &str,
 ) -> Result<(), String> {
+    validate_field(path, 2048, "مسیر انتقال")?;
+    validate_field(host, 253, "Host انتقال")?;
     match network {
         "" | "tcp" | "raw" => Ok(()),
         "ws" => {
@@ -379,10 +430,59 @@ fn parse_url(value: &str, protocol: &str) -> Result<url::Url, String> {
 }
 
 fn required_host(url: &url::Url) -> Result<String, String> {
-    url.host_str()
+    let host = url
+        .host_str()
         .filter(|host| !host.is_empty())
         .map(str::to_owned)
-        .ok_or_else(|| "آدرس سرور در لینک وجود ندارد.".into())
+        .ok_or_else(|| "آدرس سرور در لینک وجود ندارد.".to_string())?;
+    if host.len() > 253 || host.chars().any(char::is_whitespace) {
+        return Err("آدرس سرور معتبر نیست.".into());
+    }
+    Ok(host)
+}
+
+pub fn validate_endpoint_host(host: &str, allow_private: bool) -> Result<(), String> {
+    validate_field(host, 253, "آدرس سرور")?;
+    let normalized = host
+        .trim_matches(['[', ']'])
+        .trim_end_matches('.')
+        .to_ascii_lowercase();
+    if normalized.is_empty()
+        || normalized == "localhost"
+        || normalized.ends_with(".localhost")
+        || normalized.ends_with(".local")
+    {
+        return Err("آدرس محلی برای منبع Community پذیرفته نمی‌شود.".into());
+    }
+    if let Ok(ip) = normalized.parse::<IpAddr>() {
+        let unsafe_ip = match ip {
+            IpAddr::V4(ip) => {
+                ip.is_private()
+                    || ip.is_loopback()
+                    || ip.is_link_local()
+                    || ip.is_unspecified()
+                    || ip.is_multicast()
+            }
+            IpAddr::V6(ip) => {
+                ip.is_loopback()
+                    || ip.is_unspecified()
+                    || ip.is_multicast()
+                    || (ip.segments()[0] & 0xfe00) == 0xfc00
+                    || (ip.segments()[0] & 0xffc0) == 0xfe80
+            }
+        };
+        if unsafe_ip && !allow_private {
+            return Err("آدرس‌های خصوصی، محلی و link-local در منابع Community مجاز نیستند.".into());
+        }
+    }
+    Ok(())
+}
+
+fn validate_field(value: &str, max: usize, label: &str) -> Result<(), String> {
+    if value.len() > max || value.chars().any(|value| value.is_control()) {
+        return Err(format!("{label} معتبر نیست یا بیش از حد طولانی است."));
+    }
+    Ok(())
 }
 
 fn required_port(url: &url::Url) -> Result<u16, String> {

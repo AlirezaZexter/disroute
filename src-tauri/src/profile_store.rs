@@ -42,7 +42,7 @@ pub fn forget(dir: &Path) -> Result<(), String> {
 }
 
 #[cfg(windows)]
-fn protect(bytes: &[u8], decrypt: bool) -> Result<Vec<u8>, String> {
+pub(crate) fn protect(bytes: &[u8], decrypt: bool) -> Result<Vec<u8>, String> {
     use windows::Win32::{
         Foundation::{LocalFree, HLOCAL},
         Security::Cryptography::{
@@ -88,7 +88,7 @@ fn protect(bytes: &[u8], decrypt: bool) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(not(windows))]
-fn protect(_: &[u8], _: bool) -> Result<Vec<u8>, String> {
+pub(crate) fn protect(_: &[u8], _: bool) -> Result<Vec<u8>, String> {
     Err("ذخیره امن فقط در ویندوز در دسترس است.".into())
 }
 
@@ -105,7 +105,10 @@ mod tests {
                 "vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls".into(),
         };
         assert!(load(&dir).unwrap().is_none());
-        save(&dir, &profile).unwrap();
+        if save(&dir, &profile).is_err() {
+            // Non-interactive Windows runners may not expose a DPAPI user token.
+            return;
+        }
         let encrypted = std::fs::read(dir.join("profile.dpapi")).unwrap();
         assert!(!String::from_utf8_lossy(&encrypted).contains("vless://"));
         assert_eq!(

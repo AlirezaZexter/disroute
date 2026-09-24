@@ -74,7 +74,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: DisRoute __VERSION__
-          releaseBody: Windows installer with in-app signed updates. Read the release notes and Persian setup guide before installing.
+          releaseBody: Fixes Windows Firewall paths after installation or in-app updates. Adds optional Community Quick Connect with locally tested third-party subscriptions; availability is not guaranteed. Windows installer includes signed in-app updates.
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
@@ -95,5 +95,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $assets = (Get-ChildItem outputs/DisRoute-*-windows-x64.zip*).FullName
-          gh release upload '${{ github.ref_name }}' @assets --clobber
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          gh release upload "v$version" @assets --clobber
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
