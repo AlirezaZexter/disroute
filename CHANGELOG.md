@@ -4,7 +4,7 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-09-24
+## [0.4.1] - 2026-09-24
 
 ### Added
 
@@ -64,8 +64,8 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 - Shipped a GUI-only executable with an explicit notification-area icon.
 
-[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.4.0...HEAD
-[0.4.0]: https://github.com/AlirezaZexter/disroute/compare/v0.3.0...v0.4.0
+[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/AlirezaZexter/disroute/compare/v0.3.0...v0.4.1
 [0.3.0]: https://github.com/AlirezaZexter/disroute/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/AlirezaZexter/disroute/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/AlirezaZexter/disroute/compare/v0.2.4...v0.2.5

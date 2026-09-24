@@ -213,7 +213,7 @@ function App() {
           <p>مسیریابی اختصاصی Discord</p>
         </div>
         <div className="header-actions">
-          <span className="version">WINDOWS · 0.4.0 PREVIEW</span>
+          <span className="version">WINDOWS · 0.4.1 PREVIEW</span>
           <button className="text-button update-check-button" type="button" disabled={checkingUpdate || updating} onClick={handleCheckUpdates}>{checkingUpdate ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}</button>
           <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
         </div>
