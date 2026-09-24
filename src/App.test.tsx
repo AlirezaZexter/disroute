@@ -12,6 +12,7 @@ describe("DisRoute dashboard", () => {
     expect(screen.getByText("بازی‌ها")).toBeInTheDocument();
     expect(screen.getAllByText("Direct")).toHaveLength(2);
     expect(screen.getByRole("heading", { name: "کانفیگ پروکسی" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "بررسی آپدیت" })).toBeInTheDocument();
     expect(screen.getByText(/مجوز Firewall موردنیاز/)).toBeInTheDocument();
     expect(screen.getByLabelText(/مسیر دوطرفهٔ شبکه/).querySelectorAll("svg")).toHaveLength(2);
   });
@@ -25,5 +26,11 @@ describe("DisRoute dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "اتصال Discord" }));
     await waitFor(() => expect(screen.getByRole("heading", { name: "خطای اتصال" })).toBeInTheDocument());
     expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("reports the current version when the updater runs outside Tauri", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "بررسی آپدیت" }));
+    await waitFor(() => expect(screen.getByText("نسخه جدیدی منتشر نشده")).toBeInTheDocument());
   });
 });

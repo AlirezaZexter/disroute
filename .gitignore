@@ -11,6 +11,9 @@ work/
 outputs/
 src-tauri/binaries/*.exe
 src-tauri/binaries/*.dll
+src-tauri/resources/*
+!src-tauri/resources/.gitkeep
+.npm-cache/
 *.dpapi
 *.dpapi.pending
 **/sing-box.json

@@ -44,6 +44,15 @@ impl EngineManager {
             }
         }
 
+        // Installer builds bundle the pinned engines as Tauri resources so
+        // every signed application update can replace them atomically too.
+        if let Ok(resource_dir) = app.path().resource_dir() {
+            let bundled_engine = resource_dir.join("resources").join("engine");
+            if bundled_engine.is_dir() {
+                return Ok(bundled_engine);
+            }
+        }
+
         Ok(app
             .path()
             .app_local_data_dir()

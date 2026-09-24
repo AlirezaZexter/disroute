@@ -1,47 +1,78 @@
 name: Windows release
+
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
-  build:
+  build-and-publish:
     runs-on: windows-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+
       - uses: dtolnay/rust-toolchain@stable
+
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+
+      - name: Verify release tag and signing secret
+        shell: pwsh
+        env:
+          SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ('${{ github.ref_name }}' -ne "v$version") { throw 'Tag and package version differ.' }
+          if ([string]::IsNullOrWhiteSpace($env:SIGNING_KEY)) { throw 'TAURI_SIGNING_PRIVATE_KEY is not configured.' }
+
       - run: npm ci
       - run: npm test
       - run: npm run build
       - run: cargo test --manifest-path src-tauri/Cargo.toml --features custom-protocol
-      - run: npm run build:portable
-      - name: Package pinned engines
+
+      - name: Prepare verified engine resources
+        shell: pwsh
+        run: ./scripts/prepare-installer.ps1
+
+      - name: Build signed updater and publish release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: DisRoute __VERSION__
+          releaseBody: Windows installer with in-app signed updates. Read the release notes and Persian setup guide before installing.
+          generateReleaseNotes: true
+          releaseDraft: false
+          prerelease: false
+          updaterJsonPreferNsis: true
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true
+          uploadWorkflowArtifacts: true
+          releaseAssetNamePattern: DisRoute-[version]-windows-[arch][setup].[ext]
+          args: --bundles nsis --features custom-protocol
+
+      - name: Package portable fallback
         shell: pwsh
         run: ./scripts/package-portable.ps1
-      - uses: actions/upload-artifact@v4
-        with:
-          name: DisRoute-windows-x64
-          path: outputs/DisRoute-*-windows-x64.zip*
-          if-no-files-found: error
-      - name: Publish prerelease for version tag
-        if: startsWith(github.ref, 'refs/tags/')
+
+      - name: Upload portable fallback
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ($env:RELEASE_TAG -ne "v$version") { throw 'Tag and package version differ' }
           $assets = (Get-ChildItem outputs/DisRoute-*-windows-x64.zip*).FullName
-          gh release create $env:RELEASE_TAG @assets --title "DisRoute $version (Windows preview)" --notes-file docs/RELEASE-NOTES.md --prerelease
+          gh release upload '${{ github.ref_name }}' @assets --clobber
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

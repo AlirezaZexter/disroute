@@ -14,7 +14,7 @@
 </div>
 
 > [!IMPORTANT]
-> DisRoute is an unsigned preview. It improves routing convenience; it is not a privacy, anonymity, or leak-prevention product.
+> DisRoute is a preview. The updater verifies release signatures, but the Windows installer is not yet Authenticode-signed. This is not a privacy, anonymity, or leak-prevention product.
 
 ## Why DisRoute?
 
@@ -27,15 +27,16 @@ Some networks cannot reach Discord reliably, while routing the whole computer th
 - Remote DNS recovery for Discord and dynamic voice hosts
 - Windows-protected profile storage with explicit save and delete controls
 - Persian RTL interface, tray lifecycle, keyboard access, and reduced-motion support
-- Portable, versioned Windows builds with pinned and SHA256-verified engines
+- Installer and portable Windows builds with pinned and SHA256-verified engines
+- Signed in-app updates published through GitHub Releases
 
 ## Quick start
 
-1. Open [Releases](https://github.com/AlirezaZexter/disroute/releases) and download `DisRoute-<version>-windows-x64.zip` — not GitHub's source archive.
-2. Extract the ZIP completely.
-3. Run the included ProxiFyre prerequisite installer once.
-4. Start `DisRoute.exe` as Administrator.
-5. Paste your own VLESS, VMess, Trojan, or Shadowsocks share link and connect.
+1. Open [Releases](https://github.com/AlirezaZexter/disroute/releases) and download the Windows x64 setup file, not GitHub's source archive.
+2. If Windows Packet Filter is not installed, download the portable fallback once and run its included ProxiFyre prerequisite installer.
+3. Install DisRoute and start it as Administrator.
+4. Paste your own VLESS, VMess, Trojan, or Shadowsocks share link and connect.
+5. Future releases can be checked and installed from the **بررسی آپدیت** button inside the app.
 
 The package includes a Persian text guide. WebView2, the Microsoft Visual C++ x64 runtime, and Windows Packet Filter are required.
 
@@ -82,7 +83,7 @@ Unknown transport, flow, security, and packet-encoding values fail closed with a
 - Generated process rules match Discord executables and Discord's own updater path; games and browsers are not added.
 - Saved profiles use Windows DPAPI and are bound to the current Windows account.
 - The active sing-box configuration is temporarily written under the app's local AppData runtime directory and removed during normal shutdown.
-- Releases are currently unsigned previews. Verify the release checksum before use.
+- The updater validates every downloaded update with the embedded public key. The installer itself is not yet Authenticode-signed, so Windows SmartScreen can still warn.
 - A local Administrator or malware running as the same user can still access runtime state and traffic.
 - Routing separation cannot reserve bandwidth or prevent unrelated apps from saturating the connection.
 
@@ -104,6 +105,13 @@ Build the production executable with Tauri's custom protocol enabled:
 npm run build:portable
 ```
 
+Prepare the checksum-pinned engine resources and build the installer with updater artifacts:
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY="$env:USERPROFILE\.tauri\disroute.key"
+npm run build:installer
+```
+
 Do not substitute a plain `cargo build --release`; that leaves the Tauri development URL in the executable. Engine payloads are intentionally not committed. See [the release checklist](docs/RELEASING.md) for packaging and verification.
 
 ## Repository guide
@@ -113,7 +121,7 @@ Do not substitute a plain `cargo build --release`; that leaves the Tauri develop
 | `src/` | React/TypeScript desktop interface |
 | `src-tauri/src/` | Rust controller, profile protection, routing configuration, and voice bridge |
 | `scripts/` | Reproducible packaging and dependency verification |
-| `.github/workflows/` | Windows CI and tagged prerelease builds |
+| `.github/workflows/` | Windows CI and signed tagged releases |
 | `docs/` | Setup, release, and troubleshooting documentation |
 
 ## Contributing

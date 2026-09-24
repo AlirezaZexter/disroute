@@ -1,7 +1,9 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { connect, disconnect, getStatus, saveProfile, loadProfile, forgetProfile, hideToTray, restartDiscord } from "./api";
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion, useIsPresent } from "motion/react";
 import type { AppStatus, ProxyProfile } from "./types";
+import { downloadAndInstall, findUpdate, type UpdateProgress } from "./updater";
+import type { Update } from "@tauri-apps/plugin-updater";
 
 const initialProfile: ProxyProfile = {
   name: "Discord",
@@ -62,6 +64,11 @@ function App() {
   const [configTouched, setConfigTouched] = useState(false);
   const [confirmForget, setConfirmForget] = useState(false);
   const [view, setView] = useState<"connection" | "guide">("connection");
+  const [updatePhase, setUpdatePhase] = useState<"idle" | "checking" | "available" | "current" | "downloading" | "installing" | "error">("idle");
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; notes?: string } | null>(null);
+  const [updateProgress, setUpdateProgress] = useState<UpdateProgress>({ downloaded: 0 });
+  const [updateError, setUpdateError] = useState("");
+  const pendingUpdate = useRef<Update | null>(null);
   const reduced = useReducedMotion();
   const connected = appStatus.status === "connected";
   const detectedProtocol = detectProtocol(profile.configLink);
@@ -153,6 +160,49 @@ function App() {
     }
   }
 
+  async function handleCheckUpdates() {
+    setUpdatePhase("checking");
+    setUpdateError("");
+    try {
+      const update = await findUpdate();
+      pendingUpdate.current = update;
+      if (update) {
+        setUpdateInfo({ version: update.version, notes: update.body || undefined });
+        setUpdatePhase("available");
+      } else {
+        setUpdateInfo(null);
+        setUpdatePhase("current");
+      }
+    } catch (error) {
+      setUpdateError(`بررسی نسخه ناموفق بود: ${String(error)}`);
+      setUpdatePhase("error");
+    }
+  }
+
+  async function handleInstallUpdate() {
+    const update = pendingUpdate.current;
+    if (!update) return;
+    setUpdateProgress({ downloaded: 0 });
+    setUpdateError("");
+    setUpdatePhase("downloading");
+    try {
+      await downloadAndInstall(
+        update,
+        (progress) => setUpdateProgress(progress),
+        async () => {
+          setUpdatePhase("installing");
+          if (connected) setAppStatus(await disconnect());
+        },
+      );
+    } catch (error) {
+      setUpdateError(`دانلود یا نصب نسخه جدید ناموفق بود: ${String(error)}`);
+      setUpdatePhase("error");
+    }
+  }
+
+  const checkingUpdate = updatePhase === "checking";
+  const updating = updatePhase === "downloading" || updatePhase === "installing";
+
   return (
     <MotionConfig reducedMotion="user" transition={{ duration: reduced ? 0 : .22 }}><LayoutGroup>
     <main className="shell">
@@ -162,9 +212,32 @@ function App() {
           <h1>DisRoute</h1>
           <p>مسیریابی اختصاصی Discord</p>
         </div>
-        <span className="version">WINDOWS · 0.3.0 PREVIEW</span>
-        <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
+        <div className="header-actions">
+          <span className="version">WINDOWS · 0.4.0 PREVIEW</span>
+          <button className="text-button update-check-button" type="button" disabled={checkingUpdate || updating} onClick={handleCheckUpdates}>{checkingUpdate ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}</button>
+          <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
+        </div>
       </header>
+
+      <AnimatePresence initial={false}>
+        {updatePhase !== "idle" && updatePhase !== "checking" && (
+          <motion.section className={`update-card update-${updatePhase}`} initial={{ opacity: 0, y: reduced ? 0 : -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} role={updatePhase === "error" ? "alert" : "status"} aria-live={updatePhase === "error" ? "assertive" : "polite"}>
+            <div className="update-copy">
+              <span className="eyebrow">به‌روزرسانی برنامه</span>
+              {updatePhase === "available" && <><strong>نسخه <bdi dir="ltr">{updateInfo?.version}</bdi> آماده است</strong><p>{updateInfo?.notes || "نسخه جدید از GitHub دانلود و پس از بررسی امضا نصب می‌شود."}</p></>}
+              {updatePhase === "current" && <><strong>نسخه جدیدی منتشر نشده</strong><p>همین نسخه، آخرین نسخه موجود است.</p></>}
+              {updatePhase === "downloading" && <><strong>در حال دانلود نسخه <bdi dir="ltr">{updateInfo?.version}</bdi></strong><p>{updateProgress.percent === undefined ? "حجم فایل در حال دریافت است…" : `${updateProgress.percent}٪ دریافت شده`}</p></>}
+              {updatePhase === "installing" && <><strong>دانلود کامل شد</strong><p>نصب شروع شده و DisRoute دوباره اجرا می‌شود.</p></>}
+              {updatePhase === "error" && <><strong>آپدیت انجام نشد</strong><p dir="auto">{updateError}</p></>}
+            </div>
+            {updatePhase === "downloading" && <div className="update-progress" role="progressbar" aria-label="پیشرفت دانلود آپدیت" aria-valuemin={0} aria-valuemax={100} aria-valuenow={updateProgress.percent}><span style={{ transform: `scaleX(${(updateProgress.percent || 0) / 100})` }} /></div>}
+            <div className="update-actions">
+              {updatePhase === "available" && <button className="button button-primary" type="button" onClick={handleInstallUpdate}>دانلود و نصب</button>}
+              {(updatePhase === "available" || updatePhase === "current" || updatePhase === "error") && <button className="text-button" type="button" onClick={() => setUpdatePhase("idle")}>{updatePhase === "available" ? "بعداً" : "بستن"}</button>}
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       <div className="workspace-heading"><div><span className="eyebrow">DISROUTE</span><h2>اتصال Discord</h2></div><span className="local-badge">فقط روی این دستگاه</span></div>
       <nav className="view-switch" aria-label="بخش‌های برنامه">

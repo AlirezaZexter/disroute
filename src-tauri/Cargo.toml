@@ -1,6 +1,6 @@
 [package]
 name = "disroute"
-version = "0.3.0"
+version = "0.4.0"
 description = "Discord-only network routing for Windows"
 authors = ["DisRoute contributors"]
 license = "AGPL-3.0-or-later"
@@ -21,6 +21,7 @@ base64 = "0.22"
 percent-encoding = "2"
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
 url = "2"
 
 [target.'cfg(windows)'.dependencies]

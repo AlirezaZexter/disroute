@@ -4,6 +4,19 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-24
+
+### Added
+
+- Signed in-app update checks, download progress, and passive Windows installation.
+- A reproducible NSIS installer containing checksum-pinned ProxiFyre and sing-box resources.
+- Automatic GitHub release metadata and updater signatures for tagged versions.
+
+### Changed
+
+- Stops the active proxy engines before the Windows updater exits the application.
+- Keeps the portable ZIP as a fallback while making the installer the recommended first download.
+
 ## [0.3.0] - 2026-09-23
 
 ### Added
@@ -51,7 +64,8 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 - Shipped a GUI-only executable with an explicit notification-area icon.
 
-[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/AlirezaZexter/disroute/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/AlirezaZexter/disroute/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/AlirezaZexter/disroute/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/AlirezaZexter/disroute/compare/v0.2.4...v0.2.5

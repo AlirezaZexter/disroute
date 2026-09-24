@@ -1,7 +1,7 @@
 {
   "name": "disroute",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,11 +10,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "tauri": "tauri",
+    "prepare:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-installer.ps1",
+    "build:installer": "npm run prepare:installer && tauri build --features custom-protocol",
     "build:portable": "tauri build --no-bundle --features custom-protocol",
     "check": "npm run test && npm run build && cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-updater": "^2.12.0",
     "motion": "13.2.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
