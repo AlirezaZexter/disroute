@@ -1,6 +1,7 @@
 name: Windows release
 
 on:
+  workflow_dispatch:
   push:
     tags: ['v*']
 
@@ -32,10 +33,30 @@ jobs:
           SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ('${{ github.ref_name }}' -ne "v$version") { throw 'Tag and package version differ.' }
+          if ('${{ github.event_name }}' -eq 'push' -and '${{ github.ref_name }}' -ne "v$version") {
+            throw 'Tag and package version differ.'
+          }
           if ([string]::IsNullOrWhiteSpace($env:SIGNING_KEY)) { throw 'TAURI_SIGNING_PRIVATE_KEY is not configured.' }
 
       - run: npm ci
+
+      - name: Verify updater signing credentials
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          Set-Content -LiteralPath updater-signing-check.txt -Value 'DisRoute updater signing check' -NoNewline
+          try {
+            npm run tauri -- signer sign updater-signing-check.txt
+            if ($LASTEXITCODE -ne 0) {
+              throw 'Updater signing failed. Check TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD.'
+            }
+          }
+          finally {
+            Remove-Item -LiteralPath updater-signing-check.txt, updater-signing-check.txt.sig -Force -ErrorAction SilentlyContinue
+          }
+
       - run: npm test
       - run: npm run build
       - run: cargo test --manifest-path src-tauri/Cargo.toml --features custom-protocol
