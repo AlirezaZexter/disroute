@@ -49,7 +49,7 @@ The setup package already contains DisRoute, ProxiFyre, and sing-box. Microsoft 
 
 Open DisRoute as Administrator and select **بررسی آپدیت**. When a release is available, choose **دانلود و نصب**. DisRoute downloads the GitHub Release asset, verifies its embedded updater signature, stops the active Discord route cleanly, and starts passive installation.
 
-Version `0.5.0` checks only when the button is selected; it does not silently check on every launch. Users upgrading from versions older than `0.4.1` must install a current setup package manually once.
+Version `0.5.1` checks only when the button is selected; it does not silently check on every launch. Users upgrading from versions older than `0.4.1` must install a current setup package manually once.
 
 ## Features
 

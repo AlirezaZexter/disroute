@@ -14,7 +14,7 @@ DisRoute برای ویندوز ۶۴ بیتی ساخته شده است.
 
 نام فایل نصب نسخهٔ فعلی:
 
-DisRoute-0.5.0-windows-x64-setup.exe
+DisRoute-0.5.1-windows-x64-setup.exe
 
 فایل‌های Source code برنامهٔ آمادهٔ نصب نیستند.
 

@@ -289,7 +289,7 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
-          <span className="version" dir="ltr">v0.5.0</span>
+          <span className="version" dir="ltr">v0.5.1</span>
           <button className="text-button update-check-button" type="button" disabled={checkingUpdate || updating} onClick={handleCheckUpdates}>{checkingUpdate ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}</button>
           <button className="text-button tray-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to system tray</button>
         </div>
