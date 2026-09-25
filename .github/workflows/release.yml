@@ -74,7 +74,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: DisRoute __VERSION__
-          releaseBody: Refines the Persian desktop interface with clearer connection states, calmer visual hierarchy, improved responsive behavior, and an updated setup guide. Network routing, Xray lifecycle, Firewall behavior, and signed in-app updates are unchanged.
+          releaseBody: Ships the refined Persian desktop interface, local Vazirmatn typography, clearer saved-profile feedback, restrained shared-layout motion, and the updated setup guide. Network routing, Xray lifecycle, Firewall behavior, Community Quick Connect, and signed in-app updates are unchanged.
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false

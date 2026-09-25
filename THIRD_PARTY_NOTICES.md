@@ -9,6 +9,7 @@ Portable releases bundle unmodified versions of these engines:
 - **Motion** — MIT; https://github.com/motiondivision/motion ; exact version in package-lock.json.
 - **React** — MIT; https://github.com/facebook/react.
 - **Tauri** — MIT/Apache-2.0; https://github.com/tauri-apps/tauri.
+- **Vazirmatn** — SIL Open Font License 1.1; https://github.com/rastikerdar/vazirmatn. The regular, medium, semibold and bold font files are bundled locally for Persian UI text.
 
 Engine license texts are included under licenses/. Source archives are available at https://github.com/wiresock/proxifyre/archive/refs/tags/v2.6.1.zip and https://github.com/SagerNet/sing-box/archive/refs/tags/v1.14.0.zip . Engine checksums are pinned in scripts/package-portable.ps1. ProxiFyre's bundled Newtonsoft.Json, NLog, Topshelf and native components retain their respective upstream terms.
 

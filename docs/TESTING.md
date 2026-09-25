@@ -24,6 +24,16 @@ cargo test --manifest-path src-tauri/Cargo.toml live_community_scan -- --ignored
 
 Firewall integration requires an elevated terminal. Set `DISROUTE_FIREWALL_TEST_PROGRAM` to the local ProxiFyre executable, then run `installed_firewall_roundtrip -- --ignored`. This updates only the application's named TCP/UDP rules and checks both create/update behavior with canonical verbatim Windows paths.
 
+## 0.5.2 verification record (2026-09-25)
+
+- 12 frontend tests and 32 Rust tests passed; TypeScript and production frontend build passed.
+- The checksum-pinned sing-box authentication, failed-authentication and cleanup integration test passed.
+- The bundled Vazirmatn files were emitted in the production build, and the connection and setup-guide views were inspected in the local desktop preview.
+- Component extraction, shared-layout motion, saved-profile feedback, RTL typography and responsive presentation were covered without changing the network backend.
+- No networking, routing, Xray lifecycle, Firewall, profile-storage format, Community source, or updater logic changed in this release.
+
+The signed NSIS installer, updater signature, `latest.json`, and portable package are built by the tagged GitHub Actions release workflow.
+
 ## 0.5.1 verification record (2026-09-25)
 
 - 12 frontend tests and 32 Rust tests passed; TypeScript and production frontend build passed.

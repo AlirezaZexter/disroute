@@ -58,7 +58,9 @@ it('requires confirmation before forgetting and retains input when cancelled', a
   fireEvent.click(screen.getByRole('button', { name: 'انصراف' }));
   expect(screen.getByDisplayValue(profile.configLink)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'حذف کانفیگ ذخیره‌شده' }));
-  fireEvent.click(screen.getByRole('button', { name: 'بله، حذف شود' }));
+  const confirmDelete = screen.getByRole('button', { name: 'بله، حذف شود' });
+  expect(confirmDelete).toHaveFocus();
+  fireEvent.click(confirmDelete);
   await waitFor(() => expect(screen.queryByDisplayValue(profile.configLink)).not.toBeInTheDocument());
 });
 it('does not connect or claim saved when protected storage fails', async () => {
@@ -74,7 +76,7 @@ it('keeps profile data when switching guide and connection views', async () => {
   await screen.findByDisplayValue(profile.configLink);
   fireEvent.click(screen.getByRole('button', { name: 'راهنمای شروع' }));
   expect(screen.getByRole('heading', { name: 'راه‌اندازی DisRoute' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'اتصال' }));
+  fireEvent.click(screen.getByRole('button', { name: 'بازگشت به اتصال' }));
   expect(screen.getByDisplayValue(profile.configLink)).toBeInTheDocument();
 });
 

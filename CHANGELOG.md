@@ -4,6 +4,25 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-25
+
+### Changed
+
+- Split the desktop interface into focused view and controller components without changing the connection backend.
+- Added restrained shared-layout and cross-fade transitions with reduced-motion support.
+- Bundled Vazirmatn locally and improved the type scale, line height, mixed-direction text, and small-label readability.
+- Refined the connection status, profile persistence feedback, route summary, Community scan progress, and setup guide presentation.
+
+### Fixed
+
+- Keep saved-profile state visible after loading and make form state changes clearer in the Persian interface.
+
+## [0.5.1] - 2026-09-25
+
+### Changed
+
+- Refined the desktop layout and synchronized the Persian setup guide with the installer, updater, Community mode, tray lifecycle, and voice requirements.
+
 ## [0.5.0] - 2026-09-25
 
 ### Fixed
@@ -78,7 +97,10 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 - Shipped a GUI-only executable with an explicit notification-area icon.
 
-[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/AlirezaZexter/disroute/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/AlirezaZexter/disroute/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/AlirezaZexter/disroute/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/AlirezaZexter/disroute/compare/v0.3.0...v0.4.1
 [0.3.0]: https://github.com/AlirezaZexter/disroute/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/AlirezaZexter/disroute/compare/v0.2.5...v0.2.6
