@@ -3,99 +3,139 @@
 
   # DisRoute
 
-  **Discord-only proxy routing for Windows — without sending the rest of the system through a VPN.**
+  **Selective Discord proxy routing for Windows**
+
+  Route Discord through a personal or community proxy while games, browsers, downloads, and the rest of Windows keep using the normal connection.
 
   [![CI](https://github.com/AlirezaZexter/disroute/actions/workflows/ci.yml/badge.svg)](https://github.com/AlirezaZexter/disroute/actions/workflows/ci.yml)
-  [![Release](https://img.shields.io/github/v/release/AlirezaZexter/disroute?include_prereleases&sort=semver)](https://github.com/AlirezaZexter/disroute/releases)
-  [![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white)](https://github.com/AlirezaZexter/disroute/releases)
+  [![Latest release](https://img.shields.io/github/v/release/AlirezaZexter/disroute?sort=semver&label=release)](https://github.com/AlirezaZexter/disroute/releases/latest)
+  [![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white)](https://github.com/AlirezaZexter/disroute/releases/latest)
   [![License: AGPL-3.0](https://img.shields.io/github/license/AlirezaZexter/disroute)](LICENSE)
 
-  [Download](https://github.com/AlirezaZexter/disroute/releases) · [راهنمای فارسی](docs/START-HERE-FA.txt) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Contributing](CONTRIBUTING.md)
+  [Download latest release](https://github.com/AlirezaZexter/disroute/releases/latest) · [راهنمای فارسی](docs/START-HERE-FA.txt) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Contributing](CONTRIBUTING.md)
 </div>
 
 > [!IMPORTANT]
-> DisRoute is a preview. The updater verifies release signatures, but the Windows installer is not yet Authenticode-signed. This is not a privacy, anonymity, or leak-prevention product.
+> DisRoute is a preview. In-app updates are cryptographically signed, but the Windows installer is not yet Authenticode-signed and may trigger SmartScreen. DisRoute is not an anonymity, privacy, or leak-prevention product.
 
-## Why DisRoute?
+## What it solves
 
-Some networks cannot reach Discord reliably, while routing the whole computer through a VPN adds latency to games, browsers, and downloads. DisRoute targets the Discord desktop processes only and keeps unrelated applications on the normal network path.
+A system-wide VPN can add latency to games and redirect unrelated traffic. DisRoute applies Windows per-process routing rules to Discord Stable, PTB, and Canary instead. It does not enable the Windows system proxy, replace the system DNS configuration, or create a default VPN route.
 
-- Per-process TCP and UDP routing for Discord Stable, PTB, and Canary
+Two connection modes are available:
+
+- **Personal configuration:** import a VLESS, VMess, Trojan, or Shadowsocks share link and optionally keep it encrypted with Windows DPAPI.
+- **Community Quick Connect:** refresh permitted public subscription sources, reject invalid or unsafe entries, run real tunneled health checks, rank the working candidates, and connect to a current best option.
+
+Community endpoints are operated by third parties. DisRoute does not own them and cannot guarantee their availability, speed, privacy, or Discord Voice quality.
+
+## Install on Windows
+
+1. Open the [latest release](https://github.com/AlirezaZexter/disroute/releases/latest).
+2. Download `DisRoute-<version>-windows-x64-setup.exe`. Do not download GitHub's **Source code** archives.
+3. Install DisRoute, then launch it with **Run as administrator**. Administrator access is required for the existing per-process packet-routing and Firewall rules.
+4. If DisRoute reports that Windows Packet Filter is missing, download the portable ZIP from the same release, extract it, and run `ProxiFyre-2.6.1-win-x64-setup.exe` once. The driver prerequisite is not installed silently by DisRoute.
+5. Import a personal link or open **اتصال سریع رایگان**, read and accept the third-party warning, then connect.
+
+The setup package already contains DisRoute, ProxiFyre, and sing-box. Microsoft Edge WebView2 Runtime, Microsoft Visual C++ Runtime x64, and Windows Packet Filter must also be available on the computer.
+
+| Release asset | Use it for |
+| --- | --- |
+| `DisRoute-<version>-windows-x64-setup.exe` | Normal installation and future in-app updates |
+| `DisRoute-<version>-windows-x64.zip` | Portable fallback and the one-time ProxiFyre/Windows Packet Filter prerequisite installer |
+| `*.sig`, `*.sha256`, `latest.json` | Updater and integrity metadata; regular users do not need to open these files |
+
+### Updating
+
+Open DisRoute as Administrator and select **بررسی آپدیت**. When a release is available, choose **دانلود و نصب**. DisRoute downloads the GitHub Release asset, verifies its embedded updater signature, stops the active Discord route cleanly, and starts passive installation.
+
+Version `0.5.0` checks only when the button is selected; it does not silently check on every launch. Users upgrading from versions older than `0.4.1` must install a current setup package manually once.
+
+## Features
+
+- Discord-only TCP and UDP process routing; unrelated programs stay on the direct connection
 - VLESS, VMess, Trojan, and Shadowsocks share links
-- Reality, TLS, TCP, WebSocket, HTTP, HTTPUpgrade, and gRPC transports where supported by the protocol
-- XUDP and `packetaddr` selection from compatible VLESS share links
-- Remote DNS recovery for Discord and dynamic voice hosts
+- TLS, Reality, TCP, WebSocket, HTTP/H2, HTTPUpgrade, and gRPC transports where compatible
+- XUDP and `packetaddr` support from compatible VLESS links
+- Discord Voice host recovery without decrypting Discord TLS traffic
 - Windows-protected profile storage with explicit save and delete controls
-- Persian RTL interface, tray lifecycle, keyboard access, and reduced-motion support
-- Installer and portable Windows builds with pinned and SHA256-verified engines
-- Signed in-app updates published through GitHub Releases
-- Optional Community Quick Connect with configurable GitHub, subscription, local-file, and HTTPS sources
-- Isolated sing-box health checks, Discord HTTPS latency ranking, UDP reporting, cached fallback, and bounded failover
+- Persian RTL interface, system-tray lifecycle, keyboard access, and reduced-motion support
+- Signed in-app releases distributed through GitHub Releases
+- Configurable Community sources, cached fallback, local testing, ranking, cancellation, and bounded failover
+- No telemetry, no upload of personal configurations, and no execution of code from remote source data
 
-The community manifest format and source model are documented in [Community sources](docs/COMMUNITY_SOURCES.md). The optional source registry includes public MIT-licensed subscriptions from Radikal and Au1rxx, plus a CDN mirror. Credentials are fetched at runtime, never bundled. Availability and latency depend on the local network and third-party endpoints.
+## Community Quick Connect
 
-## Quick start
+The optional Community mode is a client-side source and health-check system, not a hosted proxy service. Its source registry can be updated without rebuilding the app and supports:
 
-1. Open [Releases](https://github.com/AlirezaZexter/disroute/releases) and download the Windows x64 setup file, not GitHub's source archive.
-2. If Windows Packet Filter is not installed, download the portable fallback once and run its included ProxiFyre prerequisite installer.
-3. Install DisRoute and start it as Administrator.
-4. Paste your own VLESS, VMess, Trojan, or Shadowsocks share link, or choose **اتصال سریع رایگان**, acknowledge the third-party warning, and connect. Community mode refreshes, tests and ranks before connecting.
-5. Future releases can be checked and installed from the **بررسی آپدیت** button inside the app.
+- versioned JSON manifests from GitHub Raw or HTTPS;
+- GitHub Release assets;
+- standard subscription URLs;
+- local manifest files and user-added sources;
+- enable/disable controls, refresh intervals, timeouts, attribution, source-specific errors, and cached last-known-good data.
 
-The package includes a Persian text guide. WebView2, the Microsoft Visual C++ x64 runtime, and Windows Packet Filter are required.
+Each candidate is parsed into a generated internal sing-box configuration. Downloaded data cannot replace application paths, process arguments, Discord routing rules, logging, or DNS policy. Loopback, private, link-local, malformed, expired, oversized, and unsupported endpoints are rejected.
+
+Health checks use isolated temporary sing-box instances and HTTPS through a unique local SOCKS port. Ranking considers tunneled Discord HTTPS success, median connection time, jitter, failure rate, recent history, disconnect history, list age, and separately reported UDP capability. ICMP ping is not used as the primary test. A successful HTTPS or UDP probe still does not guarantee smooth Discord Voice or streaming.
+
+See [Community source architecture](docs/COMMUNITY_SOURCES.md) and the [manifest schema](docs/community-manifest.schema.json).
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    D[Discord] <--> P[ProxiFyre]
-    P <--> S[Local SOCKS5 bridge]
-    S <--> V[sing-box]
-    V <--> R[Your proxy server]
+    D[Discord processes] <--> P[ProxiFyre process routing]
+    P <--> B[Local SOCKS and voice bridge]
+    B <--> S[sing-box outbound]
+    S <--> E[Selected proxy endpoint]
     O[Games, browsers, other apps] <--> I[Direct internet]
 ```
 
-The Tauri/Rust controller owns the local engine lifecycle. ProxiFyre performs Windows per-process interception, the loopback bridge recovers validated Discord voice SNI without decrypting TLS, and sing-box carries the resulting TCP/UDP traffic through the selected proxy outbound.
+The Tauri/Rust controller owns the application state and engine lifecycle. ProxiFyre intercepts only the configured Discord executables. The local bridge recovers validated dynamic Discord Voice destinations, and sing-box carries the selected TCP or UDP traffic through the imported outbound.
 
-## Voice and streaming
+Before failover replaces an active Community connection, DisRoute starts and tests the candidate separately. A failed candidate does not replace the current route. An outbound switch can still require Discord Voice or other live sessions to reconnect.
 
-DisRoute does not cap upload bandwidth. Discord media uses UDP when available, and the UDP relay bypasses the TCP/SNI inspection path inside DisRoute. Actual stream quality still depends on:
-
-- the proxy server's upstream capacity, distance, packet loss, and UDP support;
-- whether the selected protocol and server support UDP (including XUDP or `packetaddr` for VLESS/VMess);
-- TCP head-of-line blocking when UDP is encapsulated through a TCP-based transport;
-- other applications competing for the same physical upload connection.
-
-If calls connect but streams stall or pixelate, read [Voice and streaming troubleshooting](docs/TROUBLESHOOTING.md#voice-and-streaming). A successful HTTPS probe does not prove media quality.
-
-## Supported links
-
-DisRoute accepts the share-link formats below and validates required credentials, server, port, security mode, transport, and certificate settings before startup. Certificate verification cannot be disabled through the UI. Existing profiles saved by version 0.2.x are migrated automatically.
+## Supported configurations
 
 | Link | Supported values |
 | --- | --- |
-| VLESS | `vless://` with TLS/Reality, Vision, and UDP packet encoding |
-| VMess | Base64 JSON `vmess://` links, including TLS and common transports |
-| Trojan | `trojan://` links with TLS/Reality and common transports |
+| VLESS | `vless://` with TLS or Reality, Vision, and compatible UDP packet encoding |
+| VMess | Base64 JSON `vmess://` links with TLS and supported transports |
+| Trojan | `trojan://` links with TLS or Reality and supported transports |
 | Shadowsocks | SIP002 `ss://` links without external plugins |
 | Transport | `tcp` / `raw`, `ws`, `http` / `h2`, `httpupgrade`, `grpc` |
 
-Unknown transport, flow, security, and packet-encoding values fail closed with a readable error.
+Required credentials, server names, ports, security settings, transports, and protocol combinations are validated before startup. Unknown or unsafe values fail closed with a readable error. Certificate verification cannot be disabled from imported source data.
 
-## Security boundaries
+## Voice and streaming
 
-- Generated process rules match Discord executables and Discord's own updater path; games and browsers are not added.
-- Saved profiles use Windows DPAPI and are bound to the current Windows account.
-- The active sing-box configuration is temporarily written under the app's local AppData runtime directory and removed during normal shutdown.
-- The updater validates every downloaded update with the embedded public key. The installer itself is not yet Authenticode-signed, so Windows SmartScreen can still warn.
+DisRoute does not set an upload-speed limit. Voice and stream quality still depends on endpoint distance, packet loss, server capacity, UDP support, the selected transport, and competition for the physical connection.
+
+If messages work but calls or streams do not, use a configuration with verified UDP support and read [Voice and streaming troubleshooting](docs/TROUBLESHOOTING.md#voice-and-streaming).
+
+## Security and privacy boundaries
+
+- Only known Discord executable paths and Discord's own updater path are written to generated process rules.
+- Personal profiles use Windows DPAPI and are bound to the current Windows account.
+- Runtime engine configurations are temporary and removed during normal shutdown.
+- Community manifests and history are cached with Windows account protection; temporary test configurations are deleted.
+- Complete proxy URIs, UUIDs, passwords, and keys are redacted from application diagnostics.
+- The updater accepts only releases signed by the public key embedded in the application.
+- DisRoute does not disable Windows Firewall or install permanent system-wide proxy, DNS, or default-route changes.
 - A local Administrator or malware running as the same user can still access runtime state and traffic.
-- Routing separation cannot reserve bandwidth or prevent unrelated apps from saturating the connection.
+- Selective routing cannot reserve bandwidth; another program saturating the physical connection can still increase game latency.
 
-See [SECURITY.md](SECURITY.md) for reporting guidance and [VOICE_ROUTING.md](VOICE_ROUTING.md) for the voice-host recovery design.
+See [Security policy](SECURITY.md), [Voice routing design](VOICE_ROUTING.md), and [Third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Verification
+
+The repository includes React unit tests, Rust unit tests, opt-in elevated Firewall integration coverage, isolated local engine/authentication tests, cleanup checks, and a Windows GitHub Actions release build. Public proxy credentials are not committed to the test suite.
+
+The current verification record and commands are documented in [Testing](docs/TESTING.md). A passing Community HTTPS probe is intentionally reported as a point-in-time result, not a claim that a third-party endpoint is safe or permanently available.
 
 ## Development
 
-Requirements: Node.js 24+, Rust MSVC, Microsoft C++ Build Tools, and WebView2.
+Requirements: Node.js 24+, Rust MSVC, Microsoft C++ Build Tools, PowerShell, and WebView2.
 
 ```powershell
 npm ci
@@ -103,37 +143,46 @@ npm run check
 npm run tauri dev
 ```
 
-Build the production executable with Tauri's custom protocol enabled:
+Build the production portable package with Tauri's custom protocol enabled:
 
 ```powershell
 npm run build:portable
 ```
 
-Prepare the checksum-pinned engine resources and build the installer with updater artifacts:
+Prepare checksum-pinned engine resources and create the signed-updater installer:
 
 ```powershell
 $env:TAURI_SIGNING_PRIVATE_KEY="$env:USERPROFILE\.tauri\disroute.key"
 npm run build:installer
 ```
 
-Do not substitute a plain `cargo build --release`; that leaves the Tauri development URL in the executable. Engine payloads are intentionally not committed. See [the release checklist](docs/RELEASING.md) for packaging and verification.
+Do not substitute a plain `cargo build --release`; it leaves the Tauri development URL in the executable. Engine payloads are downloaded from pinned upstream releases, checksum-verified during packaging, and intentionally excluded from Git. Follow the [release checklist](docs/RELEASING.md) for versioning, signing, and publication.
 
-## Repository guide
+## Repository map
 
 | Path | Purpose |
 | --- | --- |
-| `src/` | React/TypeScript desktop interface |
-| `src-tauri/src/` | Rust controller, profile protection, routing configuration, and voice bridge |
-| `scripts/` | Reproducible packaging and dependency verification |
+| `src/` | React/TypeScript desktop interface and updater client |
+| `src-tauri/src/` | Rust controller, validation, encrypted storage, engine lifecycle, selective routing, Community sources, health checks, and voice bridge |
+| `scripts/` | Reproducible engine preparation and Windows packaging |
 | `.github/workflows/` | Windows CI and signed tagged releases |
-| `docs/` | Setup, release, and troubleshooting documentation |
+| `docs/` | Setup, architecture, testing, release, and troubleshooting documentation |
+
+## Documentation
+
+- [راهنمای نصب و استفادهٔ فارسی](docs/START-HERE-FA.txt)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Community sources and manifest model](docs/COMMUNITY_SOURCES.md)
+- [Testing and verification](docs/TESTING.md)
+- [Release process](docs/RELEASING.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## Contributing
 
-Issues and focused pull requests are welcome. Never attach a real proxy link, unredacted engine configuration, packet capture, or user log. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the available issue templates.
+Focused issues and pull requests are welcome. Never attach a real proxy URI, unredacted engine configuration, credential, private manifest, packet capture, or user log. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a change.
 
 ## License
 
-DisRoute is licensed under [AGPL-3.0-or-later](LICENSE). Bundled third-party components retain their own licenses and notices.
+DisRoute is licensed under [AGPL-3.0-or-later](LICENSE). Bundled and downloaded third-party components retain their own licenses and notices.
 
 <div align="center"><sub>Created by Zexter · Independent of Discord Inc.</sub></div>
