@@ -74,7 +74,7 @@ it('keeps profile data when switching guide and connection views', async () => {
   await screen.findByDisplayValue(profile.configLink);
   fireEvent.click(screen.getByRole('button', { name: 'راهنمای شروع' }));
   expect(screen.getByRole('heading', { name: 'راه‌اندازی DisRoute' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'اتصال و پروفایل' }));
+  fireEvent.click(screen.getByRole('button', { name: 'اتصال' }));
   expect(screen.getByDisplayValue(profile.configLink)).toBeInTheDocument();
 });
 

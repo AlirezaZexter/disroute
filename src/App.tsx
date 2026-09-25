@@ -281,15 +281,17 @@ function App() {
     <MotionConfig reducedMotion="user" transition={{ duration: reduced ? 0 : .22 }}><LayoutGroup>
     <main className="shell">
       <header className="topbar">
-        <div className="brand-mark"><ShieldIcon /></div>
-        <div>
+        <div className="brand-lockup">
+          <div className="brand-mark"><ShieldIcon /></div>
+          <div>
           <h1>DisRoute</h1>
-          <p>مسیریابی اختصاصی Discord</p>
+            <p>مسیر مستقل Discord</p>
+          </div>
         </div>
         <div className="header-actions">
-          <span className="version">WINDOWS · 0.5.0 PREVIEW</span>
+          <span className="version" dir="ltr">v0.5.0</span>
           <button className="text-button update-check-button" type="button" disabled={checkingUpdate || updating} onClick={handleCheckUpdates}>{checkingUpdate ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}</button>
-          <button className="text-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to tray</button>
+          <button className="text-button tray-button" type="button" title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند" onClick={() => hideToTray().catch((error) => setNotice(String(error)))}>Minimize to system tray</button>
         </div>
       </header>
 
@@ -297,7 +299,7 @@ function App() {
         {updatePhase !== "idle" && updatePhase !== "checking" && (
           <motion.section className={`update-card update-${updatePhase}`} initial={{ opacity: 0, y: reduced ? 0 : -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} role={updatePhase === "error" ? "alert" : "status"} aria-live={updatePhase === "error" ? "assertive" : "polite"}>
             <div className="update-copy">
-              <span className="eyebrow">به‌روزرسانی برنامه</span>
+              <span className="section-label">آپدیت DisRoute</span>
               {updatePhase === "available" && <><strong>نسخه <bdi dir="ltr">{updateInfo?.version}</bdi> آماده است</strong><p>{updateInfo?.notes || "نسخه جدید از GitHub دانلود و پس از بررسی امضا نصب می‌شود."}</p></>}
               {updatePhase === "current" && <><strong>نسخه جدیدی منتشر نشده</strong><p>همین نسخه، آخرین نسخه موجود است.</p></>}
               {updatePhase === "downloading" && <><strong>در حال دانلود نسخه <bdi dir="ltr">{updateInfo?.version}</bdi></strong><p>{updateProgress.percent === undefined ? "حجم فایل در حال دریافت است…" : `${updateProgress.percent}٪ دریافت شده`}</p></>}
@@ -313,9 +315,9 @@ function App() {
         )}
       </AnimatePresence>
 
-      <div className="workspace-heading"><div><span className="eyebrow">DISROUTE</span><h2>اتصال Discord</h2></div><span className="local-badge">فقط روی این دستگاه</span></div>
+      <div className="workspace-heading"><div><h2>کنترل اتصال</h2><p>Discord را از مسیر پروکسی عبور دهید؛ بقیهٔ برنامه‌ها مستقیم می‌مانند.</p></div><span className="local-badge"><i /> مسیریابی انتخابی</span></div>
       <nav className="view-switch" aria-label="بخش‌های برنامه">
-        {([['connection', 'اتصال و پروفایل'], ['guide', 'راهنمای شروع']] as const).map(([id, label]) => <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>{view === id && <motion.span className="selected-view" layoutId={reduced ? undefined : 'selected-view'} transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}<span>{label}</span></button>)}
+        {([['connection', 'اتصال'], ['guide', 'راهنمای شروع']] as const).map(([id, label]) => <button type="button" key={id} aria-pressed={view === id} onClick={() => setView(id)}>{view === id && <motion.span className="selected-view" layoutId={reduced ? undefined : 'selected-view'} transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}<span>{label}</span></button>)}
       </nav>
 
       <section
@@ -325,7 +327,7 @@ function App() {
       >
         <div className="status-orb"><span /></div>
         <div className="status-copy">
-          <span className="eyebrow">وضعیت اتصال</span>
+          <span className="section-label">وضعیت فعلی</span>
           <div className="status-title-stack"><AnimatePresence initial={false}><StatusHeading key={statusTitle} title={statusTitle} reduced={!!reduced} /></AnimatePresence></div>
           <p dir="auto">{appStatus.message}</p>
         </div>
@@ -349,7 +351,7 @@ function App() {
         {connectionMode === "personal" ? (
         <form id="connection-form" className="panel" onSubmit={handleSubmit}>
           <div className="panel-heading">
-            <div><span className="eyebrow">پروفایل اتصال</span><h2>کانفیگ پروکسی</h2></div>
+            <div><h2>کانفیگ شخصی</h2><p>لینک اتصال خودتان را وارد کنید.</p></div>
             <span className="protocol-pill" aria-live="polite">{detectedProtocol || "Xray"}</span>
           </div>
 
@@ -371,7 +373,7 @@ function App() {
         </form>
         ) : (
           <form id="community-form" className="panel community-panel" noValidate onSubmit={handleCommunityConnect}>
-            <div className="panel-heading"><div><span className="eyebrow">COMMUNITY</span><h2>اتصال سریع رایگان</h2></div>{community.stale && <span className="stale-badge">کش قدیمی</span>}</div>
+            <div className="panel-heading"><div><h2>اتصال سریع رایگان</h2><p>گزینه‌های منابع تأییدشده را همین‌جا آزمایش کنید.</p></div>{community.stale && <span className="stale-badge">فهرست قدیمی</span>}</div>
             {!community.acknowledgedWarning ? <div className="community-warning" role="alertdialog" aria-labelledby="community-warning-title">
               <strong id="community-warning-title">پیش از استفاده بخوانید</strong>
               <p>اتصال‌های رایگان توسط اشخاص ثالث ارائه می‌شوند. Disroute مالک یا مدیر این سرورها نیست و امنیت، پایداری یا حریم خصوصی آن‌ها را تضمین نمی‌کند.</p>
@@ -380,8 +382,8 @@ function App() {
             </div> : <>
               <div className="community-toolbar"><div><span>آخرین نوسازی</span><strong>{formatTime(community.refreshedAt)}</strong></div><button className="button button-secondary compact" type="button" disabled={communityBusy !== "" || !community.sources.some((source) => source.enabled)} onClick={handleCommunityRefresh}>{communityBusy === "refresh" ? "در حال دریافت…" : "نوسازی منابع"}</button><button className="button button-primary compact" type="button" disabled={communityBusy !== "" || community.candidates.length === 0} onClick={handleCommunityScan}>{communityBusy === "scan" ? "در حال آزمایش…" : "آزمایش اتصال‌ها"}</button>{communityBusy === "scan" && <button className="text-button" type="button" onClick={() => cancelCommunityScan()}>لغو</button>}</div>
               <label className="remember-option"><input type="checkbox" checked={community.automaticFailover} onChange={(event) => updateFailover(event.target.checked)} /><span>تلاش خودکار با گزینهٔ سالم بعدی<small>در صورت شکست اتصال، حداکثر پنج گزینهٔ آزمایش‌شده بررسی می‌شوند.</small></span></label>
-              {communityResults.length > 0 && <section className="best-candidate" aria-live="polite"><span className="eyebrow">بهترین گزینهٔ فعلی</span>{communityResults[0].working ? <><div className="candidate-title"><strong>{communityResults[0].sourceName}</strong><span>{labelFa[communityResults[0].label]}</span></div><dl><div><dt>زمان اتصال</dt><dd><bdi dir="ltr">{communityResults[0].medianLatencyMs} ms</bdi></dd></div><div><dt>پایداری</dt><dd>{Math.round((1 - communityResults[0].failureRate) * 100)}٪</dd></div><div><dt>وویس Discord</dt><dd>{communityResults[0].udpAvailable ? "UDP فعال" : "تأیید نشده"}</dd></div></dl><small>منبع: {communityResults[0].attribution}</small></> : <p>در این آزمایش اتصال فعالی پیدا نشد.</p>}</section>}
-              <details className="source-manager" open={community.sources.length === 0}><summary>مدیریت منابع Community</summary>
+              {communityResults.length > 0 && <section className="best-candidate" aria-live="polite"><span className="section-label">بهترین گزینهٔ فعلی</span>{communityResults[0].working ? <><div className="candidate-title"><strong>{communityResults[0].sourceName}</strong><span>{labelFa[communityResults[0].label]}</span></div><dl><div><dt>زمان اتصال</dt><dd><bdi dir="ltr">{communityResults[0].medianLatencyMs} ms</bdi></dd></div><div><dt>پایداری</dt><dd>{Math.round((1 - communityResults[0].failureRate) * 100)}٪</dd></div><div><dt>وویس Discord</dt><dd>{communityResults[0].udpAvailable ? "UDP فعال" : "تأیید نشده"}</dd></div></dl><small>منبع: {communityResults[0].attribution}</small></> : <p>در این آزمایش اتصال فعالی پیدا نشد.</p>}</section>}
+              <details className="source-manager" open={community.sources.length === 0}><summary>مدیریت منابع اتصال سریع</summary>
                 {community.sources.length === 0 && <p className="empty-state">هیچ منبعی به‌صورت پیش‌فرض اضافه نشده است. فقط منبعی را ثبت کنید که ارائه‌دهنده‌اش اجازهٔ بازنشر داده باشد.</p>}
                 <ul className="source-list">{community.sources.map((source) => <li key={source.id}><label className="source-toggle"><input type="checkbox" checked={source.enabled} onChange={(event) => replaceSources(community.sources.map((item) => item.id === source.id ? { ...item, enabled: event.target.checked } : item))} /><span><strong>{source.name}</strong><small>{source.attribution} · {formatTime(source.lastSuccessfulRefresh)}</small>{source.lastError && <em>{source.lastError}</em>}</span></label><button className="text-button danger-text" type="button" onClick={() => replaceSources(community.sources.filter((item) => item.id !== source.id))}>حذف</button></li>)}</ul>
                 <div className="source-form"><label><span>نوع منبع</span><select value={sourceDraft.kind} onChange={(event) => setSourceDraft({ ...sourceDraft, kind: event.target.value as CommunitySource["kind"] })}><option value="url">JSON manifest</option><option value="githubRaw">GitHub Raw</option><option value="githubRelease">GitHub release asset</option><option value="subscription">Subscription URL</option><option value="localFile">فایل محلی</option></select></label><label><span>نام منبع</span><input required value={sourceDraft.name} onChange={(event) => setSourceDraft({ ...sourceDraft, name: event.target.value })} /></label><label><span>نشانی یا مسیر</span><input required dir="ltr" value={sourceDraft.location} onChange={(event) => setSourceDraft({ ...sourceDraft, location: event.target.value.trim() })} /></label><label><span>نام ارائه‌دهنده</span><input required value={sourceDraft.attribution} onChange={(event) => setSourceDraft({ ...sourceDraft, attribution: event.target.value })} /></label><label><span>فاصلهٔ نوسازی (دقیقه)</span><input type="number" min={5} max={10080} value={sourceDraft.refreshIntervalMinutes} onChange={(event) => setSourceDraft({ ...sourceDraft, refreshIntervalMinutes: Number(event.target.value) })} /></label><label><span>مهلت دریافت (ثانیه)</span><input type="number" min={5} max={120} value={sourceDraft.timeoutSeconds} onChange={(event) => setSourceDraft({ ...sourceDraft, timeoutSeconds: Number(event.target.value) })} /></label><label className="full-field"><span>SHA-256 فایل (اختیاری)</span><input dir="ltr" maxLength={64} value={sourceDraft.expectedSha256} onChange={(event) => setSourceDraft({ ...sourceDraft, expectedSha256: event.target.value.trim() })} /></label><label className="remember-option full-field"><input type="checkbox" checked={sourceDraft.redistributionAuthorized} onChange={(event) => setSourceDraft({ ...sourceDraft, redistributionAuthorized: event.target.checked })} /><span>ارائه‌دهنده اجازهٔ بازنشر این فهرست را داده است.</span></label><button className="button button-secondary" type="button" disabled={!sourceDraft.name || !sourceDraft.location || !sourceDraft.attribution || !sourceDraft.redistributionAuthorized} onClick={addSource}>افزودن منبع مجاز</button></div>
@@ -393,7 +395,7 @@ function App() {
         </div>
 
         <aside className="panel side-panel">
-          <div className="panel-heading"><div><span className="eyebrow">مسیر برنامه‌ها</span><h2>فقط Discord</h2></div></div>
+          <div className="panel-heading"><div><h2>مسیر ترافیک</h2><p>فقط Discord از پروکسی عبور می‌کند.</p></div></div>
           <ul className="app-list">
             <li className="active"><span className="app-dot discord" /><div><strong>Discord</strong><small>TCP و UDP از پروکسی</small></div><span>Proxy</span></li>
             <li><span className="app-dot game" /><div><strong>بازی‌ها</strong><small>بدون تغییر مسیر</small></div><span>Direct</span></li>
@@ -406,8 +408,19 @@ function App() {
           </div>
         </aside>
       </div>
-      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><span className="eyebrow">راهنمای کوتاه</span><h2>راه‌اندازی DisRoute</h2><ol><li><strong>فایل <bdi dir="ltr">ZIP</bdi> را کامل Extract کنید.</strong><p>پوشه <bdi dir="ltr">engine</bdi> باید کنار <bdi dir="ltr">DisRoute.exe</bdi> بماند. پیش‌نیازهای داخل راهنمای متنی را هم نصب کنید.</p></li><li><strong>برنامه را با <bdi dir="ltr">Run as administrator</bdi> باز کنید.</strong><p>لینک <bdi dir="ltr">VLESS، VMess، Trojan یا Shadowsocks</bdi> را وارد کنید. اگر گزینهٔ ذخیره روشن باشد، دفعهٔ بعد نیازی به واردکردن دوباره نیست.</p></li><li><strong>روی «اتصال Discord» بزنید.</strong><p>اگر پنجرهٔ Discord باز نشد، از دکمهٔ <bdi dir="ltr">Restart Discord</bdi> استفاده کنید. اتصال DisRoute قطع نمی‌شود. برای تماس صوتی، سرور و پروتکل انتخابی باید <bdi dir="ltr">UDP</bdi> را پشتیبانی کنند.</p></li><li><strong>استریم روان به آپلود سالم نیاز دارد.</strong><p>اگر صدا وصل است ولی استریم تکه‌تکه می‌شود، یک سرور نزدیک‌تر با پشتیبانی درست از <bdi dir="ltr">UDP</bdi> امتحان کنید.</p></li></ol></motion.section>}</AnimatePresence>
-      <footer className="app-footer"><span><bdi dir="ltr">Minimize to tray</bdi>: بستن پنجره · خروج کامل: منوی <bdi dir="ltr">Tray</bdi></span><span className="creator-credit">Created by Zexter</span><span dir="ltr">VLESS · VMess · Trojan · SS</span></footer>
+      <AnimatePresence>{view === 'guide' && <motion.section className="panel guide-panel" initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+        <div className="guide-intro"><div><span className="section-label">شروع کار</span><h2>راه‌اندازی DisRoute</h2><p>نصب اولیه فقط یک‌بار انجام می‌شود. بعد از آن، اتصال از داخل همین برنامه در دسترس است.</p></div><span className="guide-time">حدود ۳ دقیقه</span></div>
+        <div className="guide-steps">
+          <article><span className="step-number">۱</span><div><strong>پیش‌نیاز شبکه را نصب کنید</strong><p>بستهٔ <bdi dir="ltr">ProxiFyre</bdi> را از صفحهٔ انتشار بگیرید و فایل نصب <bdi dir="ltr">Windows Packet Filter</bdi> را یک‌بار اجرا کنید. موتورهای برنامه همراه نصب‌کنندهٔ DisRoute هستند.</p></div></article>
+          <article><span className="step-number">۲</span><div><strong>DisRoute را با دسترسی مدیر اجرا کنید</strong><p>روی میان‌بُر برنامه راست‌کلیک کنید و <bdi dir="ltr">Run as administrator</bdi> را بزنید. این دسترسی برای قانون Firewall و مسیریابی پردازش Discord لازم است.</p></div></article>
+          <article><span className="step-number">۳</span><div><strong>روش اتصال را انتخاب کنید</strong><p>در «کانفیگ شخصی» لینک <bdi dir="ltr">VLESS، VMess، Trojan یا Shadowsocks</bdi> را وارد کنید. اگر کانفیگ ندارید، «اتصال سریع رایگان» منابع فعال را آزمایش می‌کند؛ هشدار سرورهای شخص ثالث را پیش از استفاده بخوانید.</p></div></article>
+          <article><span className="step-number">۴</span><div><strong>اتصال Discord را بزنید</strong><p>بعد از نمایش وضعیت «متصل است»، Discord را باز کنید. اگر از قبل باز بوده و متصل نشد، <bdi dir="ltr">Restart Discord</bdi> را بزنید.</p></div></article>
+          <article><span className="step-number">۵</span><div><strong>تماس صوتی و استریم را جداگانه بررسی کنید</strong><p>پیام و تماس صوتی مسیر یکسانی ندارند. برای تماس صوتی و استریم، کانفیگ باید <bdi dir="ltr">UDP</bdi> و آپلود مناسب داشته باشد. کندی بازی هم می‌تواند از مصرف هم‌زمان پهنای باند باشد.</p></div></article>
+          <article><span className="step-number">۶</span><div><strong>برنامه را به کنار ساعت بفرستید</strong><p><bdi dir="ltr">Minimize to system tray</bdi> فقط پنجره را می‌بندد و اتصال روشن می‌ماند. برای خروج کامل، از منوی آیکون DisRoute کنار ساعت ویندوز استفاده کنید.</p></div></article>
+        </div>
+        <div className="guide-note"><strong>آپدیت داخل برنامه</strong><p>از بالای صفحه «بررسی آپدیت» را بزنید. نسخهٔ جدید پس از دانلود و بررسی امضا نصب می‌شود؛ آپدیت خودکار و بی‌صدا انجام نمی‌شود.</p></div>
+      </motion.section>}</AnimatePresence>
+      <footer className="app-footer"><span>بستن پنجره: <bdi dir="ltr">Minimize to system tray</bdi> · خروج کامل: منوی کنار ساعت</span><span className="creator-credit">Created by Zexter</span><span dir="ltr">VLESS · VMess · Trojan · SS</span></footer>
     </main>
     </LayoutGroup></MotionConfig>
   );

@@ -8,10 +8,11 @@ afterEach(cleanup);
 describe("DisRoute dashboard", () => {
   it("explains that only Discord is proxied", () => {
     render(<App />);
-    expect(screen.getByRole("heading", { name: "فقط Discord" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "مسیر ترافیک" })).toBeInTheDocument();
+    expect(screen.getByText("فقط Discord از پروکسی عبور می‌کند.")).toBeInTheDocument();
     expect(screen.getByText("بازی‌ها")).toBeInTheDocument();
     expect(screen.getAllByText("Direct")).toHaveLength(2);
-    expect(screen.getByRole("heading", { name: "کانفیگ پروکسی" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "کانفیگ شخصی" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "بررسی آپدیت" })).toBeInTheDocument();
     expect(screen.getByText(/مجوز Firewall موردنیاز/)).toBeInTheDocument();
     expect(screen.getByLabelText(/مسیر دوطرفهٔ شبکه/).querySelectorAll("svg")).toHaveLength(2);
@@ -42,6 +43,6 @@ describe("DisRoute dashboard", () => {
     expect(continueButton).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox", { name: /این هشدار را خواندم/ }));
     fireEvent.click(continueButton);
-    await waitFor(() => expect(screen.getByText("مدیریت منابع Community")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("مدیریت منابع اتصال سریع")).toBeInTheDocument());
   });
 });
