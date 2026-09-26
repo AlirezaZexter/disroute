@@ -1,5 +1,16 @@
 [
   {
+    "id": "anonymous-multi-proxy",
+    "name": "Anonymous · Multi Proxy",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/4n0nymou3/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt",
+    "attribution": "4n0nymou3/multi-proxy-config-fetcher · MIT · https://github.com/4n0nymou3/multi-proxy-config-fetcher",
+    "enabled": false,
+    "refreshIntervalMinutes": 60,
+    "timeoutSeconds": 12,
+    "redistributionAuthorized": true
+  },
+  {
     "id": "au1rxx-nl",
     "name": "Au1rxx · Netherlands",
     "kind": "subscription",
