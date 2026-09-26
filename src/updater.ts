@@ -4,6 +4,7 @@ export interface UpdateProgress {
   downloaded: number;
   total?: number;
   percent?: number;
+  bytesPerSecond?: number;
 }
 
 const isTauri = () => "__TAURI_INTERNALS__" in window;
@@ -20,24 +21,30 @@ export async function downloadAndInstall(
 ): Promise<void> {
   let downloaded = 0;
   let total: number | undefined;
+  const started = performance.now();
+  let lastReport = -Infinity;
 
-  const report = () => {
+  const report = (force = false) => {
+    const now = performance.now();
+    if (!force && now - lastReport < 250) return;
+    lastReport = now;
     const percent = total && total > 0 ? Math.min(100, Math.round((downloaded / total) * 100)) : undefined;
-    onProgress({ downloaded, total, percent });
+    const elapsed = (now - started) / 1000;
+    onProgress({ downloaded, total, percent, bytesPerSecond: elapsed > 0 ? downloaded / elapsed : 0 });
   };
 
   await update.download((event: DownloadEvent) => {
     if (event.event === "Started") {
       total = event.data.contentLength;
-      report();
+      report(true);
     } else if (event.event === "Progress") {
       downloaded += event.data.chunkLength;
       report();
     } else {
       if (total) downloaded = total;
-      report();
+      report(true);
     }
-  });
+  }, { timeout: 180_000 });
   await beforeInstall();
   await update.install();
 }

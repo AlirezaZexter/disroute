@@ -33,6 +33,50 @@
     "redistributionAuthorized": true
   },
   {
+    "id": "au1rxx-tr",
+    "name": "Au1rxx · Turkey",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main/output/by-country/v2ray-base64-TR.txt",
+    "attribution": "Au1rxx/free-vpn-subscriptions · public volunteer feeds · MIT · https://github.com/Au1rxx/free-vpn-subscriptions",
+    "enabled": true,
+    "refreshIntervalMinutes": 60,
+    "timeoutSeconds": 12,
+    "redistributionAuthorized": true
+  },
+  {
+    "id": "au1rxx-fr",
+    "name": "Au1rxx · France",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main/output/by-country/v2ray-base64-FR.txt",
+    "attribution": "Au1rxx/free-vpn-subscriptions · public volunteer feeds · MIT · https://github.com/Au1rxx/free-vpn-subscriptions",
+    "enabled": true,
+    "refreshIntervalMinutes": 60,
+    "timeoutSeconds": 12,
+    "redistributionAuthorized": true
+  },
+  {
+    "id": "au1rxx-ae",
+    "name": "Au1rxx · UAE",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main/output/by-country/v2ray-base64-AE.txt",
+    "attribution": "Au1rxx/free-vpn-subscriptions · public volunteer feeds · MIT · https://github.com/Au1rxx/free-vpn-subscriptions",
+    "enabled": true,
+    "refreshIntervalMinutes": 60,
+    "timeoutSeconds": 12,
+    "redistributionAuthorized": true
+  },
+  {
+    "id": "au1rxx-stable",
+    "name": "Au1rxx · Stability shortlist",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main/output/stable/v2ray-base64-0001.txt",
+    "attribution": "Au1rxx/free-vpn-subscriptions · public volunteer feeds · MIT · https://github.com/Au1rxx/free-vpn-subscriptions",
+    "enabled": true,
+    "refreshIntervalMinutes": 60,
+    "timeoutSeconds": 12,
+    "redistributionAuthorized": true
+  },
+  {
     "id": "radikal-top100-mirror",
     "name": "Radikal · CDN mirror",
     "kind": "subscription",

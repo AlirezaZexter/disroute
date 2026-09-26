@@ -168,7 +168,9 @@ async fn scan_community(
         .map_err(|_| "scan lock poisoned")?
         .begin();
     tauri::async_runtime::spawn_blocking(move || {
-        health::scan(snapshot.candidates, sing_box, runtime, cancelled, history)
+        let results = health::scan(snapshot.candidates, sing_box, runtime, cancelled, history)?;
+        store.record_scan(&results)?;
+        Ok(results)
     })
     .await
     .map_err(|_| "آزمایش منابع متوقف شد.".to_string())?

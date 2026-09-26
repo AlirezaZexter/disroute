@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/icon.svg" width="96" alt="DisRoute icon">
+  <img src="src-tauri/icons/128x128.png" width="96" alt="DisRoute icon">
 
   # DisRoute
 

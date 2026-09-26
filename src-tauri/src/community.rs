@@ -189,6 +189,8 @@ pub struct CommunitySnapshot {
 struct CommunityState {
     #[serde(default)]
     defaults_initialized: bool,
+    #[serde(default)]
+    source_catalog_version: u32,
     sources: Vec<CommunitySource>,
     cache: HashMap<String, SourceResult>,
     acknowledged_warning: bool,
@@ -204,6 +206,10 @@ pub struct CandidateHistory {
     pub disconnects: u32,
     pub consecutive_failures: u32,
     pub next_retry_at: Option<u64>,
+    #[serde(default)]
+    pub last_latency_ms: Option<u64>,
+    #[serde(default)]
+    pub tested_at: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -255,7 +261,9 @@ impl CommunityStore {
                 refreshed_at = refreshed_at.max(cache.last_successful_refresh);
             }
         }
-        let mut candidates = deduplicate(candidates);
+        // Interleave sources before the global cap: one large subscription
+        // must not consume all 500 slots and hide the smaller regional feeds.
+        let mut candidates = deduplicate(interleave_sources(candidates));
         candidates.truncate(DEFAULT_MAX_CONFIGS);
         Ok(CommunitySnapshot {
             sources: state.sources,
@@ -299,14 +307,35 @@ impl CommunityStore {
     }
 
     pub fn refresh(&self) -> Result<CommunitySnapshot, String> {
+        self.refresh_selected(false)
+    }
+
+    fn refresh_selected(&self, only_due: bool) -> Result<CommunitySnapshot, String> {
         let _guard = STORE_WRITE.lock().map_err(|_| "Community storage busy")?;
         let mut state = self.load()?;
         if !state.acknowledged_warning {
             return Err("ابتدا شرایط اتصال Community را بخوانید و تأیید کنید.".into());
         }
         let now = now_secs();
-        for source in state.sources.iter_mut().filter(|source| source.enabled) {
-            match fetch_source(source, DEFAULT_MAX_MANIFEST_BYTES, DEFAULT_MAX_CONFIGS) {
+        // Four bounded workers, rather than a timeout for every source in series.
+        // Keep storage serialized so clear/disable cannot be undone by an old fetch.
+        let sources: Vec<_> = state
+            .sources
+            .iter()
+            .filter(|source| {
+                source.enabled
+                    && (!only_due
+                        || source_due(source, now)
+                        || !state.cache.contains_key(&source.id))
+            })
+            .cloned()
+            .collect();
+        let fetched = fetch_sources(&sources);
+        for (id, fetched) in fetched {
+            let Some(source) = state.sources.iter_mut().find(|source| source.id == id) else {
+                continue;
+            };
+            match fetched {
                 Ok(mut result) => {
                     result.last_successful_refresh = Some(now);
                     source.last_successful_refresh = Some(now);
@@ -333,7 +362,7 @@ impl CommunityStore {
         let due = state.acknowledged_warning
             && state.sources.iter().any(|source| source_due(source, now));
         if due {
-            self.refresh().map(|_| ())
+            self.refresh_selected(true).map(|_| ())
         } else {
             Ok(())
         }
@@ -344,6 +373,9 @@ impl CommunityStore {
         let mut state = self.load()?;
         state.cache.clear();
         state.history.clear();
+        for source in &mut state.sources {
+            source.last_successful_refresh = None;
+        }
         self.save(&state)?;
         self.snapshot()
     }
@@ -358,6 +390,38 @@ impl CommunityStore {
 
     pub fn history(&self) -> Result<HashMap<String, CandidateHistory>, String> {
         Ok(self.load()?.history)
+    }
+
+    pub fn record_scan(&self, results: &[HealthResult]) -> Result<(), String> {
+        let _guard = STORE_WRITE.lock().map_err(|_| "Community storage busy")?;
+        let mut state = self.load()?;
+        let now = now_secs();
+        for result in results {
+            let h = state
+                .history
+                .entry(result.candidate_id.clone())
+                .or_default();
+            h.tested_at = Some(now);
+            h.last_latency_ms = if result.working {
+                result.median_latency_ms
+            } else {
+                None
+            };
+            if result.working {
+                h.consecutive_failures = 0;
+                h.next_retry_at = None;
+            } else {
+                // A failed probe is not a dropped user connection.
+                let disconnects = h.disconnects;
+                record_failure(h, now);
+                h.disconnects = disconnects;
+            }
+        }
+        state.history.retain(|_, h| {
+            h.tested_at
+                .is_none_or(|t| now.saturating_sub(t) < 7 * 86400)
+        });
+        self.save(&state)
     }
 
     pub fn record_result(&self, id: &str, success: bool) -> Result<(), String> {
@@ -409,17 +473,28 @@ impl CommunityStore {
 }
 
 fn initialize_sources(state: &mut CommunityState) -> Result<(), String> {
-    if !state.defaults_initialized {
+    if !state.defaults_initialized || state.source_catalog_version < 2 {
         let defaults: Vec<CommunitySource> =
             serde_json::from_str(include_str!("../../docs/community-sources.json"))
                 .map_err(|_| "فهرست منابع پیش‌فرض معتبر نیست.")?;
         for source in defaults {
             source.validate()?;
+            // Existing users keep removed/disabled original feeds. Only the
+            // newly introduced regional/stability feeds migrate once.
+            if state.defaults_initialized
+                && !matches!(
+                    source.id.as_str(),
+                    "au1rxx-tr" | "au1rxx-fr" | "au1rxx-ae" | "au1rxx-stable"
+                )
+            {
+                continue;
+            }
             if !state.sources.iter().any(|item| item.id == source.id) {
                 state.sources.push(source);
             }
         }
         state.defaults_initialized = true;
+        state.source_catalog_version = 2;
     }
     Ok(())
 }
@@ -430,6 +505,45 @@ fn source_due(source: &CommunitySource, now: u64) -> bool {
             .last_successful_refresh
             .map(|last| now.saturating_sub(last) >= source.refresh_interval_minutes as u64 * 60)
             .unwrap_or(true)
+}
+
+pub(crate) fn interleave_sources(mut candidates: Vec<Candidate>) -> Vec<Candidate> {
+    let mut offsets = HashMap::<String, usize>::new();
+    candidates.sort_by_cached_key(|c| {
+        let offset = offsets.entry(c.source_id.clone()).or_default();
+        let key = *offset;
+        *offset += 1;
+        key
+    });
+    candidates
+}
+
+fn fetch_sources(sources: &[CommunitySource]) -> Vec<(String, Result<SourceResult, String>)> {
+    let mut results = Vec::new();
+    for batch in sources.chunks(4) {
+        std::thread::scope(|scope| {
+            let workers: Vec<_> = batch
+                .iter()
+                .map(|source| {
+                    (
+                        source.id.clone(),
+                        scope.spawn(move || {
+                            fetch_source(source, DEFAULT_MAX_MANIFEST_BYTES, DEFAULT_MAX_CONFIGS)
+                        }),
+                    )
+                })
+                .collect();
+            for (id, worker) in workers {
+                results.push((
+                    id,
+                    worker
+                        .join()
+                        .unwrap_or_else(|_| Err("Source worker stopped".into())),
+                ));
+            }
+        });
+    }
+    results
 }
 
 fn fetch_source(
@@ -545,7 +659,7 @@ fn parse_subscription(
                 id: format!("subscription-{index}"),
                 uri: uri.to_owned(),
                 protocol,
-                country: None,
+                country: subscription_country(&source.location),
                 supports_udp: None,
                 added_at: None,
                 expires_at: None,
@@ -574,6 +688,19 @@ fn parse_subscription(
         return Err("این منبع کانفیگ معتبر و پشتیبانی‌شده‌ای ندارد.".into());
     }
     Ok(deduplicate(result))
+}
+
+fn subscription_country(location: &str) -> Option<String> {
+    // A source hint, never proof of geography or a substitute for local RTT.
+    let url = url::Url::parse(location).ok()?;
+    let country = url
+        .path()
+        .rsplit('/')
+        .next()?
+        .strip_prefix("v2ray-base64-")?
+        .strip_suffix(".txt")?;
+    (country.len() == 2 && country.bytes().all(|c| c.is_ascii_uppercase()))
+        .then(|| country.to_owned())
 }
 
 fn validate_entry(
@@ -833,17 +960,31 @@ mod tests {
     fn live_community_scan() {
         let mut state = CommunityState::default();
         initialize_sources(&mut state).unwrap();
-        let result = fetch_source(
-            &state.sources[0],
-            DEFAULT_MAX_MANIFEST_BYTES,
-            DEFAULT_MAX_CONFIGS,
-        )
-        .unwrap();
-        eprintln!("Validated {} candidates", result.candidates.len());
+        let started = std::time::Instant::now();
+        let mut candidates = Vec::new();
+        for (id, result) in fetch_sources(&state.sources) {
+            match result {
+                Ok(result) => {
+                    eprintln!(
+                        "Source {id}: {} validated candidates",
+                        result.candidates.len()
+                    );
+                    candidates.extend(result.candidates);
+                }
+                Err(error) => eprintln!("Source {id}: {}", redact_secrets(&error)),
+            }
+        }
+        let mut candidates = deduplicate(interleave_sources(candidates));
+        candidates.truncate(DEFAULT_MAX_CONFIGS);
+        eprintln!(
+            "Fetch duration {:?}; {} candidates",
+            started.elapsed(),
+            candidates.len()
+        );
         let exe = std::env::var_os("DISROUTE_TEST_ENGINE").expect("engine path");
         let root = std::env::temp_dir().join(format!("disroute-live-{}", std::process::id()));
         let results = crate::health::scan(
-            result.candidates,
+            candidates,
             exe.into(),
             root.clone(),
             std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -856,6 +997,14 @@ mod tests {
             results.len(),
             healthy.len(),
             healthy.first().and_then(|item| item.median_latency_ms)
+        );
+        eprintln!(
+            "Total duration {:?}; UDP working {}",
+            started.elapsed(),
+            healthy
+                .iter()
+                .filter(|r| r.udp_available == Some(true))
+                .count()
         );
         let mut errors = std::collections::BTreeMap::new();
         for result in &results {
@@ -885,10 +1034,60 @@ mod tests {
     fn default_sources_are_valid_and_removals_persist() {
         let mut state = CommunityState::default();
         initialize_sources(&mut state).unwrap();
-        assert_eq!(state.sources.len(), 4);
+        assert_eq!(state.sources.len(), 8);
         state.sources.clear();
         initialize_sources(&mut state).unwrap();
         assert!(state.sources.is_empty());
+    }
+
+    #[test]
+    fn catalog_upgrade_preserves_disabled_and_removed_sources() {
+        let mut state = CommunityState {
+            defaults_initialized: true,
+            ..Default::default()
+        };
+        let mut disabled = source();
+        disabled.id = "au1rxx-tr".into();
+        disabled.enabled = false;
+        state.sources.push(disabled);
+        initialize_sources(&mut state).unwrap();
+        assert_eq!(state.sources.len(), 4);
+        assert!(
+            !state
+                .sources
+                .iter()
+                .find(|s| s.id == "au1rxx-tr")
+                .unwrap()
+                .enabled
+        );
+        assert!(!state.sources.iter().any(|s| s.id == "radikal-top100"));
+        state.sources.clear();
+        initialize_sources(&mut state).unwrap();
+        assert!(state.sources.is_empty());
+    }
+
+    #[test]
+    fn regional_hint_is_a_bounded_country_code() {
+        assert_eq!(
+            subscription_country("https://example.org/v2ray-base64-TR.txt"),
+            Some("TR".into())
+        );
+        assert_eq!(
+            subscription_country("https://example.org/v2ray-base64-0001.txt"),
+            None
+        );
+    }
+
+    #[test]
+    fn large_source_cannot_starve_smaller_sources() {
+        let mut candidates =
+            parse_subscription(b"trojan://test@example.com:443", &source(), 10).unwrap();
+        let one = candidates[0].clone();
+        candidates.extend(vec![one.clone(); 600]);
+        let mut other = one;
+        other.source_id = "small".into();
+        candidates.push(other);
+        assert_eq!(interleave_sources(candidates)[1].source_id, "small");
     }
 
     #[test]

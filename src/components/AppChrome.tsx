@@ -1,7 +1,8 @@
 import { motion } from "motion/react";
 import type { UpdateProgress } from "../updater";
 import { collapseVariants, transitions } from "../motion";
-import { ShieldIcon, SpinnerIcon } from "./Icons";
+import { SpinnerIcon } from "./Icons";
+import brandIcon from "../../src-tauri/icons/128x128.png";
 
 export type AppView = "connection" | "guide";
 export type UpdatePhase = "idle" | "checking" | "available" | "current" | "downloading" | "installing" | "error";
@@ -19,14 +20,14 @@ export function TopBar({ updatePhase, onCheckUpdates, onHideToTray }: TopBarProp
   return (
     <header className="topbar">
       <div className="brand-lockup">
-        <div className="brand-mark"><ShieldIcon /></div>
+        <div className="brand-mark"><img src={brandIcon} alt="" width="42" height="42" /></div>
         <div>
           <h1>DisRoute</h1>
           <p>مسیر مستقل Discord</p>
         </div>
       </div>
       <div className="header-actions">
-        <span className="version" dir="ltr">v0.5.2</span>
+        <span className="version" dir="ltr">v0.5.3</span>
         <button
           className="text-button update-check-button"
           type="button"
@@ -75,7 +76,7 @@ export function UpdateNotice({ phase, info, progress, error, onInstall, onClose 
         <span className="section-label">آپدیت DisRoute</span>
         {phase === "available" && <><strong>نسخه <bdi dir="ltr">{info?.version}</bdi> آماده است</strong><p>{info?.notes || "نسخهٔ جدید از GitHub دانلود و پس از بررسی امضا نصب می‌شود."}</p></>}
         {phase === "current" && <><strong>نسخه جدیدی منتشر نشده</strong><p>همین نسخه، آخرین نسخهٔ موجود است.</p></>}
-        {phase === "downloading" && <><strong>در حال دانلود نسخهٔ <bdi dir="ltr">{info?.version}</bdi></strong><p>{progress.percent === undefined ? "در حال دریافت فایل…" : `${progress.percent.toLocaleString("fa-IR")}٪ دریافت شده`}</p></>}
+        {phase === "downloading" && <><strong>در حال دانلود نسخهٔ <bdi dir="ltr">{info?.version}</bdi></strong><p>{progress.percent === undefined ? "در حال دریافت فایل…" : `${progress.percent.toLocaleString("fa-IR")}٪ دریافت شده`} · <bdi dir="ltr">{(progress.downloaded / 1048576).toFixed(1)}{progress.total ? ` / ${(progress.total / 1048576).toFixed(1)}` : ""} MB</bdi>{!!progress.bytesPerSecond && <> · <bdi dir="ltr">{(progress.bytesPerSecond / 1024).toFixed(0)} KB/s</bdi></>}</p><p>آپدیت، فایل کامل نصب را دریافت می‌کند؛ فقط تغییرات دانلود نمی‌شوند.</p></>}
         {phase === "installing" && <><strong>در حال نصب</strong><p>پس از پایان نصب، DisRoute دوباره اجرا می‌شود.</p></>}
         {phase === "error" && <><strong>آپدیت انجام نشد</strong><p dir="auto">{error}</p></>}
       </div>

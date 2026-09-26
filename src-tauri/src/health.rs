@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 const SAMPLE_COUNT: usize = 3;
 const MAX_SCAN_CANDIDATES: usize = 100;
 const WORKERS: usize = 4;
-const TOTAL_SCAN_TIMEOUT: Duration = Duration::from_secs(180);
+const TOTAL_SCAN_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[derive(Default)]
 pub struct ScanControl {
@@ -55,11 +55,17 @@ pub fn scan(
             .is_some_and(|until| until > now)
     });
     candidates.sort_by_key(|candidate| {
+        let h = history.get(&candidate.id);
+        let recent_latency = h
+            .filter(|h| h.tested_at.is_some_and(|t| now.saturating_sub(t) < 86400))
+            .and_then(|h| h.last_latency_ms);
         (
+            recent_latency.unwrap_or(u64::MAX) / 100,
             std::cmp::Reverse(history.get(&candidate.id).map(|h| h.successes).unwrap_or(0)),
             random.hash_one(&candidate.id),
         )
     });
+    let candidates = crate::community::interleave_sources(candidates);
     let queue = Arc::new(Mutex::new(VecDeque::from(
         candidates
             .into_iter()
@@ -67,7 +73,8 @@ pub fn scan(
             .collect::<Vec<_>>(),
     )));
     let results = Arc::new(Mutex::new(Vec::new()));
-    let deadline = Instant::now() + TOTAL_SCAN_TIMEOUT;
+    let started = Instant::now();
+    let deadline = started + TOTAL_SCAN_TIMEOUT;
     let mut workers = Vec::new();
     for _ in 0..WORKERS {
         let queue = queue.clone();
@@ -77,6 +84,12 @@ pub fn scan(
         let cancelled = cancelled.clone();
         workers.push(thread::spawn(move || loop {
             if cancelled.load(Ordering::Relaxed) || Instant::now() >= deadline {
+                break;
+            }
+            if results
+                .lock()
+                .is_ok_and(|values| shortlist_ready(&values, started.elapsed()))
+            {
                 break;
             }
             let candidate = queue.lock().ok().and_then(|mut queue| queue.pop_front());
@@ -129,7 +142,7 @@ fn test_candidate(
         Ok((samples, failures, udp)) => {
             let successful = samples.len();
             let attempts = successful + failures;
-            result.working = successful > 0;
+            result.working = successful >= 2;
             result.failure_rate = if attempts == 0 {
                 1.0
             } else {
@@ -153,6 +166,18 @@ fn test_candidate(
         Err(error) => result.error = Some(crate::community::redact_secrets(&error)),
     }
     result
+}
+
+fn shortlist_ready(results: &[HealthResult], elapsed: Duration) -> bool {
+    let stable = |r: &&HealthResult| {
+        r.working && r.failure_rate == 0.0 && r.jitter_ms.is_some_and(|j| j <= 250)
+    };
+    let voice = results
+        .iter()
+        .filter(stable)
+        .filter(|r| r.udp_available == Some(true))
+        .count();
+    voice >= 3 || (elapsed >= Duration::from_secs(20) && results.iter().filter(stable).count() >= 4)
 }
 
 fn test_candidate_inner(
@@ -218,13 +243,31 @@ fn test_candidate_inner(
     config["outbounds"][0]["server"] = serde_json::json!(reachable.ip().to_string());
     let config = serde_json::to_vec(&config).map_err(|_| "ساخت کانفیگ داخلی آزمایش ناموفق بود.")?;
     std::fs::write(&config_path, config).map_err(|_| "نوشتن کانفیگ موقت آزمایش ناموفق بود.")?;
-    let check = hidden_command(sing_box_exe)
-        .args(["check", "-c"])
-        .arg(&config_path)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|_| "اعتبارسنجی موتور آزمایش اجرا نشد.")?;
+    cleanup.child = Some(
+        hidden_command(sing_box_exe)
+            .args(["check", "-c"])
+            .arg(&config_path)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|_| "اعتبارسنجی موتور آزمایش اجرا نشد.")?,
+    );
+    let check_deadline = Instant::now() + Duration::from_secs(3);
+    let check = loop {
+        if cancelled.load(Ordering::Relaxed) || Instant::now() >= check_deadline {
+            return Err("مهلت اعتبارسنجی موتور تمام شد.".into());
+        }
+        if let Some(status) = cleanup
+            .child
+            .as_mut()
+            .unwrap()
+            .try_wait()
+            .map_err(|_| "موتور آزمایش متوقف شد.")?
+        {
+            break status;
+        }
+        thread::sleep(Duration::from_millis(25));
+    };
     if !check.success() {
         return Err("موتور، کانفیگ تولیدشده را نپذیرفت.".into());
     }
@@ -250,7 +293,7 @@ fn test_candidate_inner(
             Ok(value) => samples.push(value),
             Err(_) => failures += 1,
         }
-        if samples.is_empty() && failures >= 2 {
+        if samples.is_empty() && failures >= 1 {
             break;
         }
     }
@@ -317,7 +360,7 @@ fn https_sample(port: u16) -> Result<u64, String> {
         .no_proxy()
         .proxy(reqwest::Proxy::all(&proxy).map_err(|_| "نشانی پروکسی آزمایش معتبر نیست.")?)
         .connect_timeout(Duration::from_secs(5))
-        .timeout(Duration::from_secs(12))
+        .timeout(Duration::from_secs(8))
         .redirect(reqwest::redirect::Policy::none())
         .https_only(true)
         .user_agent("DisRoute/Community")
@@ -329,7 +372,7 @@ fn https_sample(port: u16) -> Result<u64, String> {
         .get("https://discord.com/api/v10/gateway")
         .send()
         .map_err(|_| "پاسخ HTTPS معتبر از Discord دریافت نشد.")?;
-    if response.status().as_u16() < 200 {
+    if !response.status().is_success() {
         return Err("پاسخ HTTPS معتبر نبود.".into());
     }
     Ok(started.elapsed().as_millis().min(u64::MAX as u128) as u64)
@@ -423,6 +466,45 @@ fn valid_udp_reply(response: &[u8]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn early_completion_requires_stable_shortlist_not_one_lucky_probe() {
+        let result = HealthResult {
+            candidate_id: "test".into(),
+            source_id: "test".into(),
+            source_name: "Test".into(),
+            attribution: "Local test".into(),
+            protocol: "vless".into(),
+            country: None,
+            working: true,
+            median_latency_ms: Some(100),
+            jitter_ms: Some(10),
+            failure_rate: 0.0,
+            udp_available: Some(true),
+            label: String::new(),
+            score: 0,
+            error: None,
+            added_at: None,
+        };
+        assert!(!shortlist_ready(&[result.clone()], Duration::from_secs(30)));
+        assert!(shortlist_ready(
+            &vec![result.clone(); 3],
+            Duration::from_secs(2)
+        ));
+        let mut no_udp = result.clone();
+        no_udp.udp_available = Some(false);
+        assert!(!shortlist_ready(
+            &vec![no_udp.clone(); 4],
+            Duration::from_secs(2)
+        ));
+        assert!(shortlist_ready(&vec![no_udp; 4], Duration::from_secs(20)));
+        let mut unstable = result;
+        unstable.failure_rate = 1.0 / 3.0;
+        assert!(!shortlist_ready(
+            &vec![unstable; 5],
+            Duration::from_secs(30)
+        ));
+    }
 
     #[test]
     fn udp_requires_matching_dns_response() {

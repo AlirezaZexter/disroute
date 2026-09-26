@@ -18,10 +18,10 @@ beforeEach(() => {
   vi.mocked(api.getCommunitySnapshot).mockResolvedValue({ sources: [], candidates: [], stale: false, acknowledgedWarning: false, automaticFailover: true });
 });
 afterEach(cleanup);
-it('refreshes and tests before one-click community connection without a personal config', async () => {
+it.each([false, true])('uses fresh cache and only refreshes stale cache (stale=%s)', async (stale) => {
   vi.mocked(api.loadProfile).mockResolvedValue(null);
   const snapshot = { sources: [{ id: 'test', name: 'test source', location: 'https://example.org/sub', attribution: 'test', kind: 'subscription' as const, enabled: true, refreshIntervalMinutes: 15, timeoutSeconds: 12, redistributionAuthorized: true }], candidates: [{ id: 'a', sourceId: 'test', sourceName: 'test', attribution: 'test', uri: '', protocol: 'vless' }], stale: false, acknowledgedWarning: true, automaticFailover: false };
-  vi.mocked(api.getCommunitySnapshot).mockResolvedValue(snapshot);
+  vi.mocked(api.getCommunitySnapshot).mockResolvedValue({ ...snapshot, stale });
   vi.mocked(api.refreshCommunity).mockResolvedValue(snapshot);
   vi.mocked(api.scanCommunity).mockResolvedValue([{ candidateId: 'a', sourceId: 'test', sourceName: 'test', attribution: 'test', protocol: 'vless', working: true, medianLatencyMs: 120, jitterMs: 2, failureRate: 0, udpAvailable: true, label: 'Fast', score: 100 }]);
   vi.mocked(api.connectCommunity).mockResolvedValue({ ...status, status: 'connected' });
@@ -32,7 +32,11 @@ it('refreshes and tests before one-click community connection without a personal
   await waitFor(() => expect(button).toBeEnabled());
   fireEvent.click(button);
   await waitFor(() => expect(api.connectCommunity).toHaveBeenCalledWith(['a']));
-  expect(vi.mocked(api.refreshCommunity).mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(api.scanCommunity).mock.invocationCallOrder[0]);
+  if (stale) {
+    expect(vi.mocked(api.refreshCommunity).mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(api.scanCommunity).mock.invocationCallOrder[0]);
+  } else {
+    expect(api.refreshCommunity).not.toHaveBeenCalled();
+  }
   expect(api.connect).not.toHaveBeenCalled();
 });
 it('restores a masked profile and saves it before connection', async () => {

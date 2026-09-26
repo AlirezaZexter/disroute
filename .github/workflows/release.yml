@@ -74,7 +74,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: DisRoute __VERSION__
-          releaseBody: Ships the refined Persian desktop interface, local Vazirmatn typography, clearer saved-profile feedback, restrained shared-layout motion, and the updated setup guide. Network routing, Xray lifecycle, Firewall behavior, Community Quick Connect, and signed in-app updates are unchanged.
+          releaseBody: Applies the approved mint D logo, adds regional and stability community feeds, reuses fresh cache, parallelizes source refresh, and ends scans after a healthy shortlist. Local measurements and source fairness improve selection. Update progress now includes bytes and speed with throttled UI reporting. Updates still download the full signed installer. Discord-only routing and Firewall rules are unchanged; public proxy stability and voice quality are not guaranteed.
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false

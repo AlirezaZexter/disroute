@@ -207,7 +207,10 @@ export function useDisRouteController() {
     setCommunityError("");
     try {
       setCommunityBusy("refresh");
-      const snapshot = await refreshCommunity();
+      // Background refresh maintains the cache; do not download every source
+      // again on every connect. An empty/stale snapshot still gets a refresh.
+      const snapshot = community.candidates.length && !community.stale
+        ? community : await refreshCommunity();
       setCommunity(snapshot);
       if (!snapshot.candidates.length) throw new Error("منابع فعلی کانفیگ قابل‌آزمایشی ندارند. وضعیت منابع را بررسی کنید.");
       setCommunityBusy("scan");

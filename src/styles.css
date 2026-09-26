@@ -86,8 +86,8 @@ button, input[type="checkbox"], summary { cursor: pointer; }
 
 .topbar { direction: ltr; min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; border-bottom: 1px solid var(--border-soft); padding-bottom: 16px; }
 .brand-lockup { display: flex; align-items: center; gap: 11px; }
-.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; background: var(--surface-raised); border: 1px solid #354052; border-radius: 10px; }
-.brand-mark svg { width: 22px; fill: none; stroke: #a9b4ff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; overflow: hidden; border-radius: 10px; }
+.brand-mark img { display: block; width: 42px; height: 42px; object-fit: contain; }
 .topbar h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.35px; }
 .topbar p { direction: rtl; margin: 0; color: var(--muted); font-family: var(--font-ui); font-size: var(--text-caption); line-height: var(--leading-ui); }
 .header-actions { display: flex; align-items: center; gap: 4px; }
