@@ -4,6 +4,19 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-09-26
+
+### Fixed
+
+- Show the status route as `Discord → Proxy → Internet` with two right-facing arrows instead of bidirectional arrowheads.
+
+## [0.5.3] - 2026-09-26
+
+### Changed
+
+- Applied the new DisRoute logo across the desktop UI, executable, tray, installer, and project page.
+- Improved Community source refresh, source fairness, local result reuse, early healthy-shortlist completion, and updater progress reporting.
+
 ## [0.5.2] - 2026-09-25
 
 ### Changed

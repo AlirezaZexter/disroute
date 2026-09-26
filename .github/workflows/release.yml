@@ -74,7 +74,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: DisRoute __VERSION__
-          releaseBody: Applies the approved mint D logo, adds regional and stability community feeds, reuses fresh cache, parallelizes source refresh, and ends scans after a healthy shortlist. Local measurements and source fairness improve selection. Update progress now includes bytes and speed with throttled UI reporting. Updates still download the full signed installer. Discord-only routing and Firewall rules are unchanged; public proxy stability and voice quality are not guaranteed.
+          releaseBody: Fixes the connection status diagram so both arrows clearly show the outbound route as Discord to Proxy to Internet. The previous bidirectional arrowheads are removed. Connection behavior and Discord-only routing are unchanged.
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
