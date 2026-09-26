@@ -473,20 +473,20 @@ impl CommunityStore {
 }
 
 fn initialize_sources(state: &mut CommunityState) -> Result<(), String> {
-    if !state.defaults_initialized || state.source_catalog_version < 3 {
+    if !state.defaults_initialized || state.source_catalog_version < 2 {
         let defaults: Vec<CommunitySource> =
             serde_json::from_str(include_str!("../../docs/community-sources.json"))
                 .map_err(|_| "فهرست منابع پیش‌فرض معتبر نیست.")?;
         for source in defaults {
             source.validate()?;
-            let introduced_in = match source.id.as_str() {
-                "au1rxx-tr" | "au1rxx-fr" | "au1rxx-ae" | "au1rxx-stable" => 2,
-                "anonymous-multi-proxy" => 3,
-                _ => 1,
-            };
-            // Old stores have no catalog version. Their original defaults
-            // were already offered; never resurrect removed/disabled feeds.
-            if state.defaults_initialized && introduced_in <= state.source_catalog_version.max(1) {
+            // Existing users keep removed/disabled original feeds. Only the
+            // newly introduced regional/stability feeds migrate once.
+            if state.defaults_initialized
+                && !matches!(
+                    source.id.as_str(),
+                    "au1rxx-tr" | "au1rxx-fr" | "au1rxx-ae" | "au1rxx-stable"
+                )
+            {
                 continue;
             }
             if !state.sources.iter().any(|item| item.id == source.id) {
@@ -494,7 +494,7 @@ fn initialize_sources(state: &mut CommunityState) -> Result<(), String> {
             }
         }
         state.defaults_initialized = true;
-        state.source_catalog_version = 3;
+        state.source_catalog_version = 2;
     }
     Ok(())
 }
@@ -961,10 +961,6 @@ mod tests {
         let mut state = CommunityState::default();
         initialize_sources(&mut state).unwrap();
         let started = std::time::Instant::now();
-        if let Ok(source_id) = std::env::var("DISROUTE_TEST_SOURCE_ID") {
-            state.sources.retain(|source| source.id == source_id);
-            assert!(!state.sources.is_empty(), "Unknown test source ID");
-        }
         let mut candidates = Vec::new();
         for (id, result) in fetch_sources(&state.sources) {
             match result {
@@ -1038,7 +1034,7 @@ mod tests {
     fn default_sources_are_valid_and_removals_persist() {
         let mut state = CommunityState::default();
         initialize_sources(&mut state).unwrap();
-        assert_eq!(state.sources.len(), 9);
+        assert_eq!(state.sources.len(), 8);
         state.sources.clear();
         initialize_sources(&mut state).unwrap();
         assert!(state.sources.is_empty());
@@ -1055,7 +1051,7 @@ mod tests {
         disabled.enabled = false;
         state.sources.push(disabled);
         initialize_sources(&mut state).unwrap();
-        assert_eq!(state.sources.len(), 5);
+        assert_eq!(state.sources.len(), 4);
         assert!(
             !state
                 .sources
@@ -1065,25 +1061,6 @@ mod tests {
                 .enabled
         );
         assert!(!state.sources.iter().any(|s| s.id == "radikal-top100"));
-        state.sources.clear();
-        initialize_sources(&mut state).unwrap();
-        assert!(state.sources.is_empty());
-    }
-
-    #[test]
-    fn catalog_v3_only_adds_the_new_feed_once() {
-        let mut state = CommunityState {
-            defaults_initialized: true,
-            source_catalog_version: 2,
-            ..Default::default()
-        };
-        initialize_sources(&mut state).unwrap();
-        assert_eq!(state.sources.len(), 1);
-        assert_eq!(state.sources[0].id, "anonymous-multi-proxy");
-        assert!(!state.sources[0].enabled);
-        state.sources[0].enabled = false;
-        initialize_sources(&mut state).unwrap();
-        assert!(!state.sources[0].enabled);
         state.sources.clear();
         initialize_sources(&mut state).unwrap();
         assert!(state.sources.is_empty());

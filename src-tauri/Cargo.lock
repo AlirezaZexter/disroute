@@ -820,7 +820,7 @@ dependencies = [
 
 [[package]]
 name = "disroute"
-version = "0.5.4"
+version = "0.5.3"
 dependencies = [
  "base64 0.22.1",
  "percent-encoding",

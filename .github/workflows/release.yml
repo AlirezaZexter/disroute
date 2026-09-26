@@ -74,7 +74,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: DisRoute __VERSION__
-          releaseBody: Adds Multi Proxy Config Fetcher as an optional disabled source. Its format and published client use were verified, but a live local test found no working Discord connections among 100 tested candidates, so automatic scans do not use it unless enabled manually. Source migration preserves previous choices. Hiddify's mahsa nested-subscription test file was reviewed but not bundled. Discord-only routing and signed updates remain unchanged.
+          releaseBody: Applies the approved mint D logo, adds regional and stability community feeds, reuses fresh cache, parallelizes source refresh, and ends scans after a healthy shortlist. Local measurements and source fairness improve selection. Update progress now includes bytes and speed with throttled UI reporting. Updates still download the full signed installer. Discord-only routing and Firewall rules are unchanged; public proxy stability and voice quality are not guaranteed.
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
