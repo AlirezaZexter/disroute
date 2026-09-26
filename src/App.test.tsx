@@ -15,7 +15,7 @@ describe("DisRoute dashboard", () => {
     expect(screen.getByRole("heading", { name: "کانفیگ شخصی" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "بررسی آپدیت" })).toBeInTheDocument();
     expect(screen.getByText(/مجوز Firewall موردنیاز/)).toBeInTheDocument();
-    expect(screen.getByLabelText("مسیر ترافیک از Discord به Proxy و Internet").querySelectorAll("svg")).toHaveLength(2);
+    expect(screen.queryByLabelText("مسیر ترافیک از Discord به Proxy و Internet")).not.toBeInTheDocument();
   });
 
   it("announces preview connection failures with text instead of color alone", async () => {

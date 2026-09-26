@@ -144,15 +144,6 @@ button, input[type="checkbox"], summary { cursor: pointer; }
 .status-controls .actions { margin: 0; }
 .status-actions { grid-template-columns: minmax(0, 1fr) auto; }
 .status-actions .button-danger { width: auto; padding-inline: 15px; }
-.route-map { direction: ltr; display: flex; align-items: center; justify-content: center; gap: 7px; }
-.route-map span { color: #a4afbf; font: 600 11px/1 var(--font-latin); }
-.route-map svg { width: 26px; height: 12px; fill: none; stroke: #5e697a; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
-.route-map svg path { transition: stroke var(--motion-normal) var(--motion-ease), opacity var(--motion-normal) var(--motion-ease); }
-.route-connected svg { stroke: var(--success); }
-.route-error svg { stroke: var(--danger); opacity: .76; }
-.route-connecting svg { stroke: var(--warning); }
-.route-connecting svg path { stroke-dasharray: 5 4; animation: route-flow .8s linear infinite; }
-
 .content-grid { display: grid; grid-template-columns: minmax(0, 1.48fr) minmax(280px, .72fr); gap: 14px; margin-top: 14px; }
 .mode-column { min-width: 0; display: grid; gap: 8px; align-content: start; }
 .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface-inset); }
@@ -298,7 +289,6 @@ label small { color: var(--muted); font-size: var(--text-caption); font-weight: 
 
 @keyframes pulse { 50% { transform: scale(.72); opacity: .65; } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes route-flow { to { stroke-dashoffset: -9; } }
 @keyframes details-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 820px) {
@@ -309,7 +299,6 @@ label small { color: var(--muted); font-size: var(--text-caption); font-weight: 
   .status-card { grid-template-columns: 52px 1fr; }
   .status-controls { grid-column: 1 / -1; min-width: 0; }
   .status-controls .actions { max-width: none; }
-  .route-map { display: none; }
   .guide-steps { grid-template-columns: 1fr; }
 }
 
@@ -334,5 +323,5 @@ label small { color: var(--muted); font-size: var(--text-caption); font-weight: 
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-  .status-connecting .status-orb span, .spinner-icon path, .route-connecting svg path, .source-manager-content { animation: none; }
+  .status-connecting .status-orb span, .spinner-icon path, .source-manager-content { animation: none; }
 }

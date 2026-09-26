@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import type { AppStatus } from "../types";
 import { transitions } from "../motion";
-import { RouteArrowIcon, SpinnerIcon } from "./Icons";
+import { SpinnerIcon } from "./Icons";
 
 type ConnectionMode = "personal" | "community";
 type CommunityBusy = "" | "refresh" | "scan" | "connect";
@@ -113,9 +113,6 @@ export function ConnectionStatus({
             </motion.div>
           )}
         </AnimatePresence>
-        <div className={`route-map route-${appStatus.status}`} aria-label="مسیر ترافیک از Discord به Proxy و Internet">
-          <span>Discord</span><RouteArrowIcon /><span>Proxy</span><RouteArrowIcon /><span>Internet</span>
-        </div>
       </div>
     </motion.section>
   );

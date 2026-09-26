@@ -4,6 +4,12 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-09-27
+
+### Changed
+
+- Removed the ambiguous traffic-direction diagram from the connection status card.
+
 ## [0.5.4] - 2026-09-26
 
 ### Fixed

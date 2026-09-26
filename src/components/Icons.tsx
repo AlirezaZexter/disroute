@@ -7,14 +7,6 @@ export function ShieldIcon() {
   );
 }
 
-export function RouteArrowIcon() {
-  return (
-    <svg viewBox="0 0 28 12" aria-hidden="true" focusable="false">
-      <path d="M2 6h24M22 2l4 4-4 4" />
-    </svg>
-  );
-}
-
 export function SpinnerIcon() {
   return (
     <svg className="spinner-icon" viewBox="0 0 20 20" aria-hidden="true">

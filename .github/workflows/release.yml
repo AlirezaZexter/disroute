@@ -74,7 +74,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: DisRoute __VERSION__
-          releaseBody: Fixes the connection status diagram so both arrows clearly show the outbound route as Discord to Proxy to Internet. The previous bidirectional arrowheads are removed. Connection behavior and Discord-only routing are unchanged.
+          releaseBody: Removes the ambiguous traffic-direction diagram from the connection status card. Connection behavior and Discord-only routing are unchanged.
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
