@@ -21,10 +21,14 @@ function Get-VerifiedAsset($Name, $Url, $Hash) {
 
 $proxy = Get-VerifiedAsset 'ProxiFyre-v2.6.1-x64.zip' 'https://github.com/wiresock/proxifyre/releases/download/v2.6.1/ProxiFyre-v2.6.1-x64.zip' '86B81504D49194E002ACAE5C4DE7E2E84A79B087CBE1669255BB510E4072ABEF'
 $sing = Get-VerifiedAsset 'sing-box-1.14.0-windows-amd64.zip' 'https://github.com/SagerNet/sing-box/releases/download/v1.14.0/sing-box-1.14.0-windows-amd64.zip' '3FFB56267DA14E287BE48BD10CF7E6505260125BAD940B75101FBB4D5D58E5D6'
+$setup = Get-VerifiedAsset 'ProxiFyre-2.6.1-win-x64-setup.exe' 'https://github.com/wiresock/proxifyre/releases/download/v2.6.1/ProxiFyre-2.6.1-win-x64-setup.exe' 'C08CBB5C15ACD04D77D7C330712AE366D2A9A8E2A290586E8FE9AA73C78A1908'
 
 if (Test-Path -LiteralPath $resourceRoot) { Remove-Item -LiteralPath $resourceRoot -Recurse -Force }
 $engine = New-Item -ItemType Directory -Force -Path (Join-Path $resourceRoot 'engine')
 $licenses = New-Item -ItemType Directory -Force -Path (Join-Path $resourceRoot 'licenses')
+$prerequisites = New-Item -ItemType Directory -Force -Path (Join-Path $resourceRoot 'prerequisites')
+New-Item -ItemType File -Path (Join-Path $resourceRoot '.gitkeep') | Out-Null
+Copy-Item -LiteralPath $setup -Destination $prerequisites.FullName
 $stage = Join-Path ([IO.Path]::GetTempPath()) ('disroute-installer-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $stage | Out-Null
 

@@ -9,6 +9,8 @@ import {
   forgetProfile,
   getCommunitySnapshot,
   getStatus,
+  checkPrerequisites,
+  installPrerequisites,
   hideToTray,
   loadProfile,
   refreshCommunity,
@@ -18,7 +20,7 @@ import {
   scanCommunity,
   setCommunityPreferences,
 } from "./api";
-import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile } from "./types";
+import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile, PrerequisiteStatus } from "./types";
 import { downloadAndInstall, findUpdate, type UpdateProgress } from "./updater";
 import type { AppView, UpdatePhase } from "./components/AppChrome";
 import type { CommunityBusy, SourceDraft } from "./components/CommunityConnectionPanel";
@@ -72,6 +74,12 @@ export function useDisRouteController() {
   const [updateProgress, setUpdateProgress] = useState<UpdateProgress>({ downloaded: 0 });
   const [updateError, setUpdateError] = useState("");
   const pendingUpdate = useRef<Update | null>(null);
+  const [prerequisites, setPrerequisites] = useState<PrerequisiteStatus | null>(null);
+  const [setupBusy, setSetupBusy] = useState<"" | "check" | "install">("check");
+  const [setupError, setSetupError] = useState("");
+  const [setupNotice, setSetupNotice] = useState("");
+  const [restartRequired, setRestartRequired] = useState(false);
+  const setupReady = !prerequisites || (prerequisites.supportedPlatform && prerequisites.engines && prerequisites.packetFilter && prerequisites.visualCpp && prerequisites.dotNet && prerequisites.elevated && !restartRequired);
 
   const connected = appStatus.status === "connected";
   const detectedProtocol = detectProtocol(profile.configLink);
@@ -92,7 +100,43 @@ export function useDisRouteController() {
       .catch(() => setNotice("بازیابی پروفایل ممکن نشد؛ کانفیگ را دوباره وارد و ذخیره کنید."))
       .finally(() => setLoading(false));
     getCommunitySnapshot().then(setCommunity).catch(() => setCommunityError("خواندن تنظیمات اتصال سریع ممکن نشد."));
+    checkPrerequisites().then(setPrerequisites)
+      .catch(() => setSetupError("بررسی پیش‌نیازها کامل نشد؛ «بررسی دوباره» را بزنید."))
+      .finally(() => setSetupBusy(""));
   }, []);
+
+  async function handleCheckPrerequisites() {
+    if (setupBusy) return;
+    setSetupBusy("check"); setSetupError("");
+    try {
+      const status = await checkPrerequisites();
+      setPrerequisites(status);
+      if (status && !status.pendingReboot) setRestartRequired(false);
+    } catch (error) { setSetupError(String(error)); }
+    finally { setSetupBusy(""); }
+  }
+
+  async function handleInstallPrerequisites() {
+    if (setupBusy || connected || busy || communityBusy || updatePhase === "downloading" || updatePhase === "installing") return;
+    setSetupBusy("install"); setSetupError("");
+    setSetupNotice("نصب‌کننده باز می‌شود؛ مراحل آن را کامل کنید و به DisRoute برگردید.");
+    try {
+      const result = await installPrerequisites();
+      setPrerequisites(result.status);
+      setRestartRequired(result.outcome === "restartRequired");
+      const messages = {
+        completed: "نصب تمام شد؛ پیش‌نیازها دوباره بررسی شدند.",
+        alreadyInstalled: "پیش‌نیازهای شبکه از قبل نصب هستند.",
+        cancelled: "نصب لغو شد. هر وقت خواستید می‌توانید دوباره امتحان کنید.",
+        restartRequired: "برای کامل‌شدن نصب، Windows را Restart کنید و DisRoute را دوباره باز کنید.",
+        incomplete: "نصب کامل نشده است؛ پیام نصب‌کننده را بررسی کنید و دوباره امتحان کنید.",
+      };
+      setSetupNotice(messages[result.outcome]);
+      if (result.outcome === "incomplete") setSetupError(messages.incomplete);
+      setAppStatus(await getStatus());
+    } catch (error) { setSetupError(String(error)); setSetupNotice(""); }
+    finally { setSetupBusy(""); }
+  }
 
   useEffect(() => {
     if (busy || discordBusy || !connected) return;
@@ -140,6 +184,7 @@ export function useDisRouteController() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (setupBusy || !setupReady || setupError) return;
     setBusy(true);
     setAppStatus((current) => ({ ...current, status: "connecting", message: "در حال اتصال…" }));
     try {
@@ -203,6 +248,7 @@ export function useDisRouteController() {
 
   async function handleCommunityConnect(event: FormEvent) {
     event.preventDefault();
+    if (setupBusy || !setupReady || setupError) return;
     if (!community.acknowledgedWarning || communityBusy) return;
     setCommunityError("");
     try {
@@ -266,6 +312,7 @@ export function useDisRouteController() {
   }
 
   async function handleInstallUpdate() {
+    if (setupBusy === "install") return;
     const update = pendingUpdate.current;
     if (!update) return;
     setUpdateProgress({ downloaded: 0 });
@@ -287,15 +334,16 @@ export function useDisRouteController() {
     setNotice("برای اعمال این انتخاب، ذخیره را بزنید.");
   }
 
-  const connectDisabled = connectionMode === "personal"
+  const connectDisabled = Boolean(setupBusy || !setupReady || setupError) || (connectionMode === "personal"
     ? loading || busy || !hasConfig || unsupportedConfig
-    : communityBusy !== "" || !community.acknowledgedWarning || !community.sources.some((source) => source.enabled);
+    : communityBusy !== "" || !community.acknowledgedWarning || !community.sources.some((source) => source.enabled));
 
   return {
     profile, appStatus, busy, discordBusy, loading, remember, saved, notice, showSecret, confirmForget,
     view, connectionMode, community, communityResults, communityBusy, communityError, warningChecked,
     sourceDraft, updatePhase, updateInfo, updateProgress, updateError, connected, detectedProtocol,
     hasConfig, unsupportedConfig, configInvalid, connectDisabled,
+    prerequisites, setupBusy, setupError, setupNotice, setupReady, handleCheckPrerequisites, handleInstallPrerequisites,
     setView, setConnectionMode, setShowSecret, setConfirmForget, setWarningChecked, setSourceDraft,
     setConfigTouched, setUpdatePhase, updateProfile, handleRememberChange, handleSave, handleForget,
     handleSubmit, handleDisconnect, acknowledgeCommunity, updateFailover, addSource, replaceSources,

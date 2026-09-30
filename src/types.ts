@@ -1,5 +1,22 @@
 export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
+export interface PrerequisiteStatus {
+  packetFilter: boolean;
+  visualCpp: boolean;
+  dotNet: boolean;
+  webview: boolean;
+  pendingReboot: boolean;
+  elevated: boolean;
+  engines: boolean;
+  installerAvailable: boolean;
+  supportedPlatform: boolean;
+}
+
+export interface PrerequisiteInstallResult {
+  status: PrerequisiteStatus;
+  outcome: "completed" | "restartRequired" | "cancelled" | "alreadyInstalled" | "incomplete";
+}
+
 export interface ProxyProfile {
   name: string;
   configLink: string;

@@ -33,21 +33,21 @@ Community endpoints are operated by third parties. DisRoute does not own them an
 
 1. Open the [latest release](https://github.com/AlirezaZexter/disroute/releases/latest).
 2. Download `DisRoute-<version>-windows-x64-setup.exe`. Do not download GitHub's **Source code** archives.
-3. Install DisRoute, then launch it with **Run as administrator**. Administrator access is required for the existing per-process packet-routing and Firewall rules.
-4. If DisRoute reports that Windows Packet Filter is missing, download the portable ZIP from the same release, extract it, and run `ProxiFyre-2.6.1-win-x64-setup.exe` once. The driver prerequisite is not installed silently by DisRoute.
+3. Install DisRoute and open its shortcut. Production builds request **Administrator** permission automatically through Windows UAC; approve it to enable the existing Discord-only packet-routing and Firewall rules.
+4. DisRoute checks prerequisites at startup. If Windows Packet Filter or Visual C++ is missing, select **نصب پیش‌نیازها** inside the app and complete the official ProxiFyre installer. **No separate portable ZIP is needed.** The installer displays its terms, downloads missing prerequisites with an internet connection, and may require a Windows restart. Nothing is installed without your click.
 5. Import a personal link or open **اتصال سریع رایگان**, read and accept the third-party warning, then connect.
 
-The setup package already contains DisRoute, ProxiFyre, and sing-box. Microsoft Edge WebView2 Runtime, Microsoft Visual C++ Runtime x64, and Windows Packet Filter must also be available on the computer.
+The setup package contains DisRoute, ProxiFyre, sing-box, and a checksum-pinned prerequisite bootstrapper. DisRoute's installer includes the WebView2 bootstrapper and offers runtime installation when needed; it still requires internet to fetch the runtime. The in-app setup checks Windows Packet Filter, Visual C++ x64, .NET Framework, engine files, and elevation. .NET Framework 4.7.2 or newer must be installed through Windows Update if it is missing; the ProxiFyre bootstrapper does not install it.
 
 | Release asset | Use it for |
 | --- | --- |
 | `DisRoute-<version>-windows-x64-setup.exe` | Normal installation and future in-app updates |
-| `DisRoute-<version>-windows-x64.zip` | Portable fallback and the one-time ProxiFyre/Windows Packet Filter prerequisite installer |
+| `DisRoute-<version>-windows-x64.zip` | Optional portable fallback; not required for normal installation or prerequisites |
 | `*.sig`, `*.sha256`, `latest.json` | Updater and integrity metadata; regular users do not need to open these files |
 
 ### Updating
 
-Open DisRoute as Administrator and select **بررسی آپدیت**. When a release is available, choose **دانلود و نصب**. DisRoute downloads the GitHub Release asset, verifies its embedded updater signature, stops the active Discord route cleanly, and starts passive installation.
+Open DisRoute, approve the Windows UAC prompt, and select **بررسی آپدیت**. When a release is available, choose **دانلود و نصب**. DisRoute downloads the GitHub Release asset, verifies its embedded updater signature, stops the active Discord route cleanly, and starts passive installation.
 
 Versions `0.5.1` and newer check only when the button is selected; they do not silently check on every launch. Users upgrading from versions older than `0.4.1` must install a current setup package manually once.
 

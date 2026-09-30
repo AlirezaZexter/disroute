@@ -12,6 +12,8 @@ $bundle = Join-Path $stage "DisRoute-$version-windows-x64"
 $engine = Join-Path $bundle 'engine'
 $licenses = Join-Path $bundle 'licenses'
 New-Item -ItemType Directory -Path $engine,$licenses | Out-Null
+$prerequisites = Join-Path $bundle 'prerequisites'
+New-Item -ItemType Directory -Path $prerequisites | Out-Null
 function Get-VerifiedAsset($Name, $Url, $Hash) {
     $path = Join-Path $DownloadCache $Name
     if (!(Test-Path -LiteralPath $path)) { Invoke-WebRequest -Uri $Url -OutFile $path }
@@ -32,6 +34,7 @@ Copy-Item (Join-Path $project 'LICENSE') (Join-Path $licenses 'ProxiFyre-AGPL-3.
 Copy-Item (Join-Path $project 'THIRD_PARTY_NOTICES.md') $licenses
 Copy-Item -LiteralPath $Executable -Destination (Join-Path $bundle 'DisRoute.exe')
 Copy-Item -LiteralPath $setup -Destination $bundle
+Copy-Item -LiteralPath $setup -Destination $prerequisites
 Copy-Item (Join-Path $project 'docs/START-HERE-FA.txt') $bundle
 $outputs = Join-Path $project 'outputs'
 New-Item -ItemType Directory -Force -Path $outputs | Out-Null

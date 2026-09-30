@@ -4,6 +4,20 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-09-30
+
+### Added
+
+- In-app prerequisite detection and an explicit, interactive installation action for missing Windows Packet Filter and Visual C++ x64 components.
+- Bundled checksum-pinned official ProxiFyre prerequisite bootstrapper in both setup and portable packages. Normal users no longer need a separate portable download.
+- Clear setup progress, cancellation, failure/retry, and restart feedback; connection/test operations cannot overlap prerequisite installation.
+
+### Changed
+
+- Production executables automatically request Administrator permission through Windows UAC.
+- Embed the WebView2 bootstrapper in the Windows installer; runtime downloads still require internet.
+- Updated the in-app guide, Persian text guide, and installation/troubleshooting documentation. Discord-only routing is unchanged. Windows Authenticode signing remains unavailable.
+
 ## [0.5.5] - 2026-09-27
 
 ### Changed

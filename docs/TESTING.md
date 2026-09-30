@@ -14,6 +14,26 @@ cargo test --manifest-path src-tauri/Cargo.toml isolated_engine_authentication_a
 
 The test checks successful proxied traffic, failed authentication, process cleanup and port release. CI runs it after preparing engines.
 
+## Prerequisite setup verification (0.5.6)
+
+The startup probe reads native x64 registry/file versions without MSI repair, service activation, route changes, or firewall changes. A registered driver with a compatible file version is not proof that the driver can route traffic; a real Discord connection remains a separate manual check.
+
+After preparing resources, exercise the same installer hash verifier used before launching the official bootstrapper:
+
+```powershell
+cargo test --manifest-path src-tauri/Cargo.toml verifies_actual_bundled_prerequisite_installer -- --ignored
+```
+
+Local verification on 2026-09-30:
+
+- 22 frontend tests and 42 Rust tests passed, including explicit-consent setup, missing components, cancellation, restart, failure/retry, active-connection exclusion, installer size/tamper rejection, and bounded probe timeout.
+- The official bundled bootstrapper passed production SHA256 verification. The actual isolated sing-box authentication/failure/cleanup integration test passed.
+- The x64 Release executable was built with the production custom protocol. Its extracted embedded manifest contains `requireAdministrator`.
+- The generated NSIS installer includes the fixed `resources/prerequisites/ProxiFyre-2.6.1-win-x64-setup.exe` payload and Microsoft's WebView2 bootstrapper.
+- Persian setup states and the revised guide were visually inspected in the local browser preview. The plain-text Persian guide passed orthography checks.
+
+Not verified on a clean Windows installation: accepting the upstream installer terms, actual driver/runtime download and installation, cancellation/rollback during an MSI change, restart completion, installed-app UAC launch, Discord voice/streaming, and an end-to-end update from 0.5.5. Do not treat mocked UI outcomes or a ready status on this already-provisioned PC as proof of those workflows. No driver was installed or removed on the user's machine for testing.
+
 ## Opt-in local checks
 
 The public-source test downloads the first configured default feed, parses it with the production validator and performs actual certificate-verified Discord HTTPS requests through isolated proxy instances. It prints aggregate counts and latency, never credentials. It intentionally fails if no currently working endpoints are found. It is not a deterministic release gate.

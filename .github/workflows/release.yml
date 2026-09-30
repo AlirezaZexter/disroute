@@ -74,7 +74,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: DisRoute __VERSION__
-          releaseBody: Removes the ambiguous traffic-direction diagram from the connection status card. Connection behavior and Discord-only routing are unchanged.
+          releaseBody: "Adds in-app prerequisite checks and explicit installation via the bundled official ProxiFyre bootstrapper, so a separate portable download is no longer required. Production builds request Administrator permission automatically. The WebView2 bootstrapper is included; missing runtimes/drivers still need internet and may require a restart. Updated Persian setup guides. Discord-only routing is unchanged. The installer is not Authenticode-signed."
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false

@@ -3,6 +3,7 @@ mod discord;
 mod engine;
 mod health;
 mod model;
+mod prerequisites;
 mod profile_store;
 mod voice_proxy;
 
@@ -10,6 +11,7 @@ use community::{CommunitySnapshot, CommunitySource, HealthResult};
 use engine::EngineManager;
 use health::ScanControl;
 use model::{AppStatus, ProxyProfile};
+use prerequisites::{InstallResult, PrerequisiteStatus, SetupControl};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 
@@ -45,6 +47,20 @@ fn get_status(app: AppHandle, manager: State<'_, Mutex<EngineManager>>) -> AppSt
 }
 
 #[tauri::command]
+async fn check_prerequisites(app: AppHandle) -> Result<PrerequisiteStatus, String> {
+    tauri::async_runtime::spawn_blocking(move || prerequisites::check(&app))
+        .await
+        .map_err(|_| "بررسی پیش‌نیازها متوقف شد.".to_string())?
+}
+
+#[tauri::command]
+async fn install_prerequisites(app: AppHandle) -> Result<InstallResult, String> {
+    tauri::async_runtime::spawn_blocking(move || prerequisites::install(&app))
+        .await
+        .map_err(|_| "نصب پیش‌نیازها متوقف شد.".to_string())?
+}
+
+#[tauri::command]
 fn save_profile(app: AppHandle, profile: ProxyProfile) -> Result<(), String> {
     let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     profile_store::save(&data_dir, &profile)
@@ -67,6 +83,11 @@ async fn start_tunnel(
     manager: State<'_, Mutex<EngineManager>>,
     failover: State<'_, Mutex<FailoverPlan>>,
 ) -> Result<AppStatus, String> {
+    let control = app.state::<SetupControl>();
+    let _operation = control
+        .0
+        .try_lock()
+        .map_err(|_| "آماده‌سازی یا آزمایش اتصال در حال اجراست؛ کمی صبر کنید.")?;
     profile.validate()?;
     failover
         .lock()
@@ -168,6 +189,11 @@ async fn scan_community(
         .map_err(|_| "scan lock poisoned")?
         .begin();
     tauri::async_runtime::spawn_blocking(move || {
+        let control = app.state::<SetupControl>();
+        let _operation = control
+            .0
+            .try_lock()
+            .map_err(|_| "آماده‌سازی یا اتصال در حال اجراست؛ کمی صبر کنید.")?;
         let results = health::scan(snapshot.candidates, sing_box, runtime, cancelled, history)?;
         store.record_scan(&results)?;
         Ok(results)
@@ -204,6 +230,11 @@ fn connect_community_inner(
     app: AppHandle,
     candidate_ids: Vec<String>,
 ) -> Result<AppStatus, String> {
+    let control = app.state::<SetupControl>();
+    let _operation = control
+        .0
+        .try_lock()
+        .map_err(|_| "آماده‌سازی یا آزمایش اتصال در حال اجراست؛ کمی صبر کنید.")?;
     if candidate_ids.is_empty() {
         return Err("هیچ اتصال سالمی انتخاب نشده است.".into());
     }
@@ -285,6 +316,7 @@ pub fn run() {
         .manage(Mutex::new(EngineManager::default()))
         .manage(Mutex::new(ScanControl::default()))
         .manage(Mutex::new(FailoverPlan::default()))
+        .manage(SetupControl::default())
         .setup(|app| {
             use tauri::{
                 menu::{Menu, MenuItem},
@@ -336,6 +368,10 @@ pub fn run() {
             let failover_app = app.handle().clone();
             std::thread::spawn(move || loop {
                 std::thread::sleep(std::time::Duration::from_secs(15));
+                let setup = failover_app.state::<SetupControl>();
+                let Ok(_operation) = setup.0.try_lock() else {
+                    continue;
+                };
                 let disconnected = failover_app
                     .state::<Mutex<EngineManager>>()
                     .lock()
@@ -450,6 +486,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             hide_to_tray,
             get_status,
+            check_prerequisites,
+            install_prerequisites,
             save_profile,
             load_profile,
             forget_profile,

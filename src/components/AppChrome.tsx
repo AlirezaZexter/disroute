@@ -27,7 +27,7 @@ export function TopBar({ updatePhase, onCheckUpdates, onHideToTray }: TopBarProp
         </div>
       </div>
       <div className="header-actions">
-        <span className="version" dir="ltr">v0.5.5</span>
+        <span className="version" dir="ltr">v0.5.6</span>
         <button
           className="text-button update-check-button"
           type="button"

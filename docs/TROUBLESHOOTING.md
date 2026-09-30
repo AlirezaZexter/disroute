@@ -1,12 +1,12 @@
 # Troubleshooting
 
-Use the newest DisRoute release and extract it into a fresh folder before debugging an older installation. Never post a complete proxy link, `profile.dpapi`, runtime configuration, packet capture, or unredacted log in a public issue.
+Use the newest DisRoute setup package before debugging an older installation. Only portable users need to extract the ZIP into a fresh folder. Never post a complete proxy link, `profile.dpapi`, runtime configuration, packet capture, or unredacted log in a public issue.
 
 ## Connection does not start
 
-1. Run `DisRoute.exe` as Administrator.
-2. Confirm that the `engine` directory is beside the executable.
-3. Install the bundled ProxiFyre prerequisite package and reboot Windows if its installer requests it.
+1. Open DisRoute and approve the Windows UAC request. Production builds request Administrator automatically.
+2. Read the **آماده‌سازی اتصال** panel. Use **بررسی دوباره** to retry detection. Installed engine files are bundled resources, not a folder you need to copy manually.
+3. Select **نصب پیش‌نیازها** if Windows Packet Filter or Visual C++ is missing, complete the visible ProxiFyre installer, and reboot Windows if requested. No separate portable ZIP is required. Internet access is needed for prerequisite downloads. If .NET Framework is missing, install 4.7.2 or newer through Windows Update first.
 4. Check the Windows clock, Firewall, and Antivirus if the optional HTTPS probe cannot complete.
 5. Try the same share link in a trusted client. A working TCP connection does not prove UDP support.
 

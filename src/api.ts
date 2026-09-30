@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile } from "./types";
+import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile, PrerequisiteStatus, PrerequisiteInstallResult } from "./types";
 
 const browserFallback: AppStatus = {
   status: "disconnected",
@@ -9,6 +9,15 @@ const browserFallback: AppStatus = {
 };
 
 const isTauri = () => "__TAURI_INTERNALS__" in window;
+
+export async function checkPrerequisites(): Promise<PrerequisiteStatus | null> {
+  return isTauri() ? invoke("check_prerequisites") : null;
+}
+
+export async function installPrerequisites(): Promise<PrerequisiteInstallResult> {
+  if (!isTauri()) throw new Error("نصب پیش‌نیازها فقط داخل برنامهٔ Windows در دسترس است.");
+  return invoke("install_prerequisites");
+}
 
 export async function hideToTray(): Promise<void> {
   if (!isTauri()) throw new Error("Minimize to tray فقط در نسخهٔ ویندوز در دسترس است.");

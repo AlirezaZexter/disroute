@@ -6,6 +6,7 @@ import { PersonalConnectionPanel } from "./components/PersonalConnectionPanel";
 import { CommunityConnectionPanel } from "./components/CommunityConnectionPanel";
 import { ConnectionSidebar } from "./components/ConnectionSidebar";
 import { GuideView } from "./components/GuideView";
+import { PrerequisitePanel } from "./components/PrerequisitePanel";
 import { useDisRouteController } from "./useDisRouteController";
 
 function App() {
@@ -31,6 +32,10 @@ function App() {
           </AnimatePresence>
 
           <WorkspaceHeading />
+          <PrerequisitePanel status={controller.prerequisites} busy={controller.setupBusy} ready={controller.setupReady && !controller.setupError}
+            connectionBusy={controller.connected || controller.busy || Boolean(controller.communityBusy) || controller.updatePhase === "downloading" || controller.updatePhase === "installing"}
+            error={controller.setupError} notice={controller.setupNotice}
+            onCheck={controller.handleCheckPrerequisites} onInstall={controller.handleInstallPrerequisites} />
           <ViewSwitch view={controller.view} onChange={controller.setView} />
           <ConnectionStatus
             appStatus={controller.appStatus}

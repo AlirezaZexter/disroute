@@ -3,12 +3,12 @@ import { transitions } from "../motion";
 
 const steps = [
   {
-    title: "پیش‌نیاز شبکه را نصب کنید",
-    copy: <p>بستهٔ <bdi dir="ltr">ProxiFyre</bdi> را از صفحهٔ انتشار بگیرید و نصب‌کنندهٔ <bdi dir="ltr">Windows Packet Filter</bdi> را یک‌بار اجرا کنید. موتورهای برنامه همراه نصب‌کنندهٔ DisRoute هستند.</p>,
+    title: "DisRoute را نصب و باز کنید",
+    copy: <p>فایل نصب ویندوز را از صفحهٔ انتشار بگیرید. هنگام بازکردن DisRoute، اجازهٔ <bdi dir="ltr">Administrator</bdi> را در پیام Windows تأیید کنید. این دسترسی برای مسیریابی Discord لازم است؛ راست‌کلیک روی میان‌بُر لازم نیست.</p>,
   },
   {
-    title: "برنامه را با دسترسی مدیر اجرا کنید",
-    copy: <p>روی میان‌بُر DisRoute راست‌کلیک کنید و <bdi dir="ltr">Run as administrator</bdi> را بزنید. این دسترسی برای قانون Firewall و مسیریابی پردازش Discord لازم است.</p>,
+    title: "پیش‌نیازهای اتصال را آماده کنید",
+    copy: <p>اگر بالای صفحه پیش‌نیازی نصب نبود، «نصب پیش‌نیازها» را بزنید و مراحل نصب‌کننده را کامل کنید. این مرحله به اینترنت نیاز دارد. فایل <bdi dir="ltr">Portable</bdi> جداگانه لازم نیست. اگر نصب‌کننده درخواست کرد، Windows را دوباره راه‌اندازی کنید.</p>,
   },
   {
     title: "روش اتصال را انتخاب کنید",
@@ -33,7 +33,7 @@ export function GuideView() {
     <motion.section className="panel guide-panel" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }} transition={transitions.normal}>
       <div className="guide-intro">
         <div><span className="section-label">شروع کار</span><h2>راه‌اندازی DisRoute</h2><p>نصب اولیه فقط یک‌بار انجام می‌شود. بعد از آن، اتصال از داخل همین برنامه در دسترس است.</p></div>
-        <span className="guide-time">حدود ۳ دقیقه</span>
+        <span className="guide-time">نصب اولیه</span>
       </div>
       <div className="guide-steps">
         {steps.map((step, index) => (

@@ -3,12 +3,14 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import * as api from "./api";
 import App from "./App";
+import type { PrerequisiteStatus } from "./types";
 
-vi.mock('./api', () => ({ getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined), restartDiscord: vi.fn(), getCommunitySnapshot: vi.fn(), saveCommunitySources: vi.fn(), setCommunityPreferences: vi.fn(), refreshCommunity: vi.fn(), scanCommunity: vi.fn(), cancelCommunityScan: vi.fn(), clearCommunityData: vi.fn(), connectCommunity: vi.fn() }));
+vi.mock('./api', () => ({ checkPrerequisites: vi.fn(), installPrerequisites: vi.fn(), getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined), restartDiscord: vi.fn(), getCommunitySnapshot: vi.fn(), saveCommunitySources: vi.fn(), setCommunityPreferences: vi.fn(), refreshCommunity: vi.fn(), scanCommunity: vi.fn(), cancelCommunityScan: vi.fn(), clearCommunityData: vi.fn(), connectCommunity: vi.fn() }));
 const profile = { name: 'My route', configLink: 'vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls' };
 const status = { status: 'disconnected' as const, engineReady: true, isElevated: true, message: 'ready' };
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(api.checkPrerequisites).mockResolvedValue(null);
   vi.mocked(api.getStatus).mockResolvedValue(status);
   vi.mocked(api.loadProfile).mockResolvedValue(profile);
   vi.mocked(api.saveProfile).mockResolvedValue();
@@ -18,6 +20,79 @@ beforeEach(() => {
   vi.mocked(api.getCommunitySnapshot).mockResolvedValue({ sources: [], candidates: [], stale: false, acknowledgedWarning: false, automaticFailover: true });
 });
 afterEach(cleanup);
+const readyPrerequisites: PrerequisiteStatus = {
+  packetFilter: true, visualCpp: true, dotNet: true, webview: true,
+  pendingReboot: false, elevated: true, engines: true,
+  installerAvailable: true, supportedPlatform: true,
+};
+
+it('installs missing prerequisites only with explicit consent and enables connection after verification', async () => {
+  vi.mocked(api.checkPrerequisites).mockResolvedValue({ ...readyPrerequisites, packetFilter: false });
+  let finish!: (value: Awaited<ReturnType<typeof api.installPrerequisites>>) => void;
+  vi.mocked(api.installPrerequisites).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+  render(<App />);
+  const install = await screen.findByRole('button', { name: 'نصب پیش‌نیازها' });
+  await screen.findByDisplayValue(profile.configLink);
+  expect(api.installPrerequisites).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'اتصال Discord' })).toBeDisabled();
+  fireEvent.click(install);
+  expect(await screen.findByRole('button', { name: 'در انتظار پایان نصب…' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'بررسی دوباره' })).toBeDisabled();
+  expect(api.connect).not.toHaveBeenCalled();
+  finish({ status: readyPrerequisites, outcome: 'completed' });
+  await screen.findByRole('heading', { name: 'سیستم آمادهٔ اتصال است' });
+  fireEvent.click(screen.getByRole('button', { name: 'اتصال Discord' }));
+  await waitFor(() => expect(api.connect).toHaveBeenCalledWith(profile));
+  expect(api.installPrerequisites).toHaveBeenCalledOnce();
+});
+
+it.each(['cancelled', 'restartRequired', 'incomplete'] as const)('does not permit connection after setup result %s', async (outcome) => {
+  const missing = { ...readyPrerequisites, packetFilter: false };
+  vi.mocked(api.checkPrerequisites).mockResolvedValue(missing);
+  vi.mocked(api.installPrerequisites).mockResolvedValue({
+    status: outcome === 'restartRequired' ? { ...readyPrerequisites, pendingReboot: true } : missing, outcome,
+  });
+  render(<App />);
+  fireEvent.click(await screen.findByRole('button', { name: 'نصب پیش‌نیازها' }));
+  await waitFor(() => expect(api.installPrerequisites).toHaveBeenCalledOnce());
+  await waitFor(() => expect(screen.queryByText('در انتظار پایان نصب…')).not.toBeInTheDocument());
+  expect(screen.getByRole('button', { name: 'اتصال Discord' })).toBeDisabled();
+  expect(api.connect).not.toHaveBeenCalled();
+  if (outcome === 'restartRequired') expect(screen.getByText(/برای کامل‌شدن نصب/)).toBeInTheDocument();
+});
+
+it('shows installer errors with retry, without attempting a connection', async () => {
+  vi.mocked(api.checkPrerequisites).mockResolvedValue({ ...readyPrerequisites, visualCpp: false });
+  vi.mocked(api.installPrerequisites).mockRejectedValue('فایل نصب‌کننده تغییر کرده است؛ نصب متوقف شد.');
+  render(<App />);
+  fireEvent.click(await screen.findByRole('button', { name: 'نصب پیش‌نیازها' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('فایل نصب‌کننده تغییر کرده است');
+  expect(screen.getByRole('button', { name: 'نصب پیش‌نیازها' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'اتصال Discord' })).toBeDisabled();
+  expect(api.connect).not.toHaveBeenCalled();
+});
+
+it('does not offer prerequisite installation during an active connection', async () => {
+  vi.mocked(api.getStatus).mockResolvedValue({ ...status, status: 'connected' });
+  vi.mocked(api.checkPrerequisites).mockResolvedValue({ ...readyPrerequisites, visualCpp: false });
+  render(<App />);
+  const install = await screen.findByRole('button', { name: 'نصب پیش‌نیازها' });
+  await waitFor(() => expect(install).toBeDisabled());
+  fireEvent.click(install);
+  expect(api.installPrerequisites).not.toHaveBeenCalled();
+});
+
+it('recovers from a prerequisite detection error via a read-only retry', async () => {
+  vi.mocked(api.checkPrerequisites).mockRejectedValueOnce('check failed').mockResolvedValue(readyPrerequisites);
+  render(<App />);
+  await screen.findByRole('alert');
+  expect(screen.getByRole('button', { name: 'اتصال Discord' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'بررسی دوباره' }));
+  await screen.findByRole('heading', { name: 'سیستم آمادهٔ اتصال است' });
+  expect(screen.getByRole('button', { name: 'اتصال Discord' })).toBeEnabled();
+  expect(api.installPrerequisites).not.toHaveBeenCalled();
+});
+
 it.each([false, true])('uses fresh cache and only refreshes stale cache (stale=%s)', async (stale) => {
   vi.mocked(api.loadProfile).mockResolvedValue(null);
   const snapshot = { sources: [{ id: 'test', name: 'test source', location: 'https://example.org/sub', attribution: 'test', kind: 'subscription' as const, enabled: true, refreshIntervalMinutes: 15, timeoutSeconds: 12, redistributionAuthorized: true }], candidates: [{ id: 'a', sourceId: 'test', sourceName: 'test', attribution: 'test', uri: '', protocol: 'vless' }], stale: false, acknowledgedWarning: true, automaticFailover: false };
