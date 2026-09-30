@@ -26,11 +26,12 @@ cargo test --manifest-path src-tauri/Cargo.toml verifies_actual_bundled_prerequi
 
 Local verification on 2026-09-30:
 
-- 22 frontend tests and 42 Rust tests passed, including explicit-consent setup, missing components, cancellation, restart, failure/retry, active-connection exclusion, installer size/tamper rejection, and bounded probe timeout.
+- 29 frontend tests, 2 release-note publication tests, and 44 Rust tests passed. Coverage includes explicit-consent setup, missing components, cancellation, restart, failure/retry, active-connection exclusion, installer size/tamper rejection, bounded probe timeout, offline notes, dismissal/relaunch, blocked storage, safe remote-note rendering, profile preservation, transparent icon edges, and consistent Windows icon configuration.
 - The official bundled bootstrapper passed production SHA256 verification. The actual isolated sing-box authentication/failure/cleanup integration test passed.
 - The x64 Release executable was built with the production custom protocol. Its extracted embedded manifest contains `requireAdministrator`.
 - The generated NSIS installer includes the fixed `resources/prerequisites/ProxiFyre-2.6.1-win-x64-setup.exe` payload and Microsoft's WebView2 bootstrapper.
 - Persian setup states and the revised guide were visually inspected in the local browser preview. The plain-text Persian guide passed orthography checks.
+- What's new and the clean D logo were visually inspected at desktop and 760×620 minimum-window dimensions, including mixed Persian/Latin text and keyboard focus. No browser console errors were observed. The Rust library suite passes with the production feature as well; the empty UAC-elevated entrypoint harness is deliberately disabled.
 
 Not verified on a clean Windows installation: accepting the upstream installer terms, actual driver/runtime download and installation, cancellation/rollback during an MSI change, restart completion, installed-app UAC launch, Discord voice/streaming, and an end-to-end update from 0.5.5. Do not treat mocked UI outcomes or a ready status on this already-provisioned PC as proof of those workflows. No driver was installed or removed on the user's machine for testing.
 

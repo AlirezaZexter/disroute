@@ -11,6 +11,14 @@ edition = "2021"
 name = "disroute_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+# The entrypoint has no tests. Its production UAC manifest prevents a test
+# harness from launching in an unelevated terminal; all tests live in the lib.
+[[bin]]
+name = "disroute"
+path = "src/main.rs"
+test = false
+bench = false
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

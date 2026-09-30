@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>DisRoute</title>
+  <!-- Clean vector master of the accepted mint D. Transparent counter and route cut;
+       no raster matte, blur, outline or shadow to contaminate small icon edges. -->
+  <path fill="#92dbb5" fill-rule="evenodd" transform="translate(-101 -98) scale(1.38)"
+    d="M143 115H270C338 115 390 164 390 227V284C390 351 338 397 268 397H143Q128 397 128 382V131Q128 115 143 115Z
+       M200 171H248C284 171 309 190 316 217L317 225L128 309V290L191 255Q200 249 200 238Z
+       M200 343H248C303 343 320 312 320 273C320 253 319 236 318 225C246 253 200 282 200 310Z" />
+</svg>

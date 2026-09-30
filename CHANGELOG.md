@@ -11,6 +11,12 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 - In-app prerequisite detection and an explicit, interactive installation action for missing Windows Packet Filter and Visual C++ x64 components.
 - Bundled checksum-pinned official ProxiFyre prerequisite bootstrapper in both setup and portable packages. Normal users no longer need a separate portable download.
 - Clear setup progress, cancellation, failure/retry, and restart feedback; connection/test operations cannot overlap prerequisite installation.
+- Persian What's new view and a dismissible once-per-version notice. Offline in-app notes and the published release body share one version-validated source.
+
+### Fixed
+
+- Removed the dark matte and noisy colored edges around the accepted D logo. Rebuilt desktop/tray icons from a transparent vector master and explicitly configured installer/uninstaller icons.
+- Production-feature Rust tests no longer attempt to run an empty executable test harness requiring UAC elevation; the library test suite remains enabled.
 
 ### Changed
 
@@ -130,7 +136,11 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 - Shipped a GUI-only executable with an explicit notification-area icon.
 
-[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/AlirezaZexter/disroute/compare/v0.5.5...v0.5.6
+[0.5.5]: https://github.com/AlirezaZexter/disroute/compare/v0.5.4...v0.5.5
+[0.5.4]: https://github.com/AlirezaZexter/disroute/compare/v0.5.3...v0.5.4
+[0.5.3]: https://github.com/AlirezaZexter/disroute/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/AlirezaZexter/disroute/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/AlirezaZexter/disroute/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/AlirezaZexter/disroute/compare/v0.4.1...v0.5.0

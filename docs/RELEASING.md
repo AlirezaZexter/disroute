@@ -1,12 +1,14 @@
 # Release checklist
 
 1. Match versions in package.json/package-lock.json, Cargo.toml/Cargo.lock, tauri.conf.json, UI, changelog, and release notes.
+   Add the matching entry in `src/release-notes.json`. `npm run build` validates it; the release workflow reads the same notes through `scripts/release-notes.mjs`. Do not maintain a separate stale release-body string.
 2. Run frontend tests/build and Rust tests on Windows. Verify DPAPI save/reload/replace/delete with a dummy profile, never a real profile in screenshots.
 3. Test keyboard navigation, reduced motion, narrow/desktop layouts, the update panel, and the Windows tray lifecycle.
+   Check What's new with empty/blocked local storage, dismissal and relaunch. For logo changes, edit `assets/disroute-logo.svg`, regenerate with `npm run tauri -- icon assets/disroute-logo.svg --output work/clean-icons`, then replace the corresponding desktop files in `src-tauri/icons/`. Inspect transparency at 32 and 128 px; never reintroduce an opaque matte or image-generation edge noise.
 4. Run `scripts/prepare-installer.ps1` and inspect the generated resource inventory. Engine archives and the official ProxiFyre prerequisite bootstrapper must match their pinned SHA256 values. Confirm `resources/prerequisites/ProxiFyre-2.6.1-win-x64-setup.exe` is included.
 5. Build locally with `TAURI_SIGNING_PRIVATE_KEY` set, then confirm the NSIS installer and `.sig` updater signature are produced.
 6. Test the installer on a clean Windows account. Confirm automatic UAC, WebView2 bootstrap, in-app missing-prerequisite detection, explicit installation/terms, cancellation, failure/retry, and restart handling without a separate portable download. Verify the embedded executable manifest contains `requireAdministrator` and that connections cannot start during prerequisite installation. Confirm Discord text, two-way voice, stream upload, and a signed update from an older test version. Do not equate registration/file-version checks with a usable driver; real Discord routing is still required.
 7. Review staged files and Git history for secrets. Never commit the private signing key, password, generated resources, outputs, work files, AppData, or runtime configs.
-8. Push the release commit only after CI passes. Create and push the matching `v<version>` tag; the release workflow publishes the installer, `latest.json`, signatures, and portable fallback.
+8. Push the release commit after local checks pass, then wait for its CI run to pass before creating and pushing the matching `v<version>` tag. The release workflow publishes the installer, `latest.json`, signatures, and portable fallback.
 9. Confirm the GitHub release is public and `latest.json` references the NSIS asset. The updater endpoint ignores drafts and prereleases.
 10. Keep a secure offline backup of the updater private key. Losing it prevents installed copies from trusting later updates.

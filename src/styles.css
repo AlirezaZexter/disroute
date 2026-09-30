@@ -282,6 +282,29 @@ label small { color: var(--muted); font-size: var(--text-caption); font-weight: 
 .community-error { color: var(--muted); overflow-wrap: anywhere; font-size: var(--text-caption); line-height: var(--leading-readable); }
 .community-error.is-error { color: #ff9da3; }
 
+.release-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 12px; padding: 10px 14px; border: 1px solid var(--border); border-inline-start: 3px solid var(--primary); border-radius: var(--radius-control); background: var(--surface-inset); }
+.release-notice p { margin: 0; font-size: var(--text-small); line-height: var(--leading-readable); color: var(--muted); }
+.release-notice bdi { color: var(--text); }
+.release-notice > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.release-notice .release-dismiss { color: var(--muted); }
+.release-panel { padding: 26px; }
+.release-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 16px 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.release-heading h2 { font-size: 22px; margin: 5px 0; }
+.release-heading p { margin: 0; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-readable); }
+.release-meta { display: grid; gap: 8px; justify-items: end; }
+.release-version { border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font: 600 16px var(--font-latin); }
+.release-meta time { color: var(--muted); font-size: var(--text-small); }
+.release-changes { max-inline-size: 76ch; }
+.release-changes article { padding-block: 18px; border-bottom: 1px solid var(--border-soft); }
+.release-changes h3 { margin: 0; font-size: var(--text-body); }
+.release-changes p, .release-notes p { margin: 6px 0 0; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-readable); }
+.release-notes { margin-top: 18px; padding: 12px 16px; background: var(--surface-inset); border-radius: var(--radius-control); border-inline-start: 2px solid var(--border); }
+.release-notes p { font-size: var(--text-small); }
+.update-release-details { margin-top: 8px; }
+.update-release-details summary { min-height: 32px; color: var(--text); font-size: var(--text-small); cursor: pointer; }
+.release-preview { max-block-size: 260px; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; padding-inline-end: 8px; }
+.release-preview p { margin-block: 8px; }
+.view-switch { flex-wrap: wrap; }
 .guide-view-wrap { margin-top: 14px; }
 .guide-panel { margin-top: 0; max-width: none; padding: 26px; }
 .guide-intro { display: flex; justify-content: space-between; align-items: start; gap: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-soft); }

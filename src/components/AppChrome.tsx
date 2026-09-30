@@ -3,8 +3,10 @@ import type { UpdateProgress } from "../updater";
 import { collapseVariants, transitions } from "../motion";
 import { SpinnerIcon } from "./Icons";
 import brandIcon from "../../src-tauri/icons/128x128.png";
+import { APP_VERSION } from "../releaseNotes";
+import { ReleasePreview } from "./WhatsNew";
 
-export type AppView = "connection" | "guide";
+export type AppView = "connection" | "guide" | "whatsNew";
 export type UpdatePhase = "idle" | "checking" | "available" | "current" | "downloading" | "installing" | "error";
 
 interface TopBarProps {
@@ -27,7 +29,7 @@ export function TopBar({ updatePhase, onCheckUpdates, onHideToTray }: TopBarProp
         </div>
       </div>
       <div className="header-actions">
-        <span className="version" dir="ltr">v0.5.6</span>
+        <span className="version" dir="ltr">v{APP_VERSION}</span>
         <button
           className="text-button update-check-button"
           type="button"
@@ -74,7 +76,7 @@ export function UpdateNotice({ phase, info, progress, error, onInstall, onClose 
     >
       <div className="update-copy">
         <span className="section-label">آپدیت DisRoute</span>
-        {phase === "available" && <><strong>نسخه <bdi dir="ltr">{info?.version}</bdi> آماده است</strong><p>{info?.notes || "نسخهٔ جدید از GitHub دانلود و پس از بررسی امضا نصب می‌شود."}</p></>}
+        {phase === "available" && <><strong>نسخه <bdi dir="ltr">{info?.version}</bdi> آماده است</strong><p>نسخهٔ جدید از GitHub دانلود و پس از بررسی امضا نصب می‌شود.</p>{info?.notes && <details className="update-release-details"><summary>تغییرات این آپدیت</summary><ReleasePreview notes={info.notes} /></details>}</>}
         {phase === "current" && <><strong>نسخه جدیدی منتشر نشده</strong><p>همین نسخه، آخرین نسخهٔ موجود است.</p></>}
         {phase === "downloading" && <><strong>در حال دانلود نسخهٔ <bdi dir="ltr">{info?.version}</bdi></strong><p>{progress.percent === undefined ? "در حال دریافت فایل…" : `${progress.percent.toLocaleString("fa-IR")}٪ دریافت شده`} · <bdi dir="ltr">{(progress.downloaded / 1048576).toFixed(1)}{progress.total ? ` / ${(progress.total / 1048576).toFixed(1)}` : ""} MB</bdi>{!!progress.bytesPerSecond && <> · <bdi dir="ltr">{(progress.bytesPerSecond / 1024).toFixed(0)} KB/s</bdi></>}</p><p>آپدیت، فایل کامل نصب را دریافت می‌کند؛ فقط تغییرات دانلود نمی‌شوند.</p></>}
         {phase === "installing" && <><strong>در حال نصب</strong><p>پس از پایان نصب، DisRoute دوباره اجرا می‌شود.</p></>}
@@ -108,7 +110,7 @@ export function WorkspaceHeading() {
 export function ViewSwitch({ view, onChange }: { view: AppView; onChange: (view: AppView) => void }) {
   return (
     <nav className="view-switch" aria-label="بخش‌های برنامه">
-      {([ ["connection", "اتصال"], ["guide", "راهنمای شروع"] ] as const).map(([id, label]) => (
+      {([ ["connection", "اتصال"], ["guide", "راهنمای شروع"], ["whatsNew", "تازه‌های نسخه"] ] as const).map(([id, label]) => (
         <button type="button" key={id} aria-pressed={view === id} onClick={() => onChange(id)}>
           {view === id && <motion.span className="selected-view" layoutId="selected-view" transition={transitions.layout} />}
           <span>{label}</span>

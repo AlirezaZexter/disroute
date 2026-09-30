@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod branding_tests;
 mod community;
 mod discord;
 mod engine;

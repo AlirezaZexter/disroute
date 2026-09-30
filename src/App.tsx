@@ -8,9 +8,19 @@ import { ConnectionSidebar } from "./components/ConnectionSidebar";
 import { GuideView } from "./components/GuideView";
 import { PrerequisitePanel } from "./components/PrerequisitePanel";
 import { useDisRouteController } from "./useDisRouteController";
+import { useState } from "react";
+import type { AppView } from "./components/AppChrome";
+import { hasUnreadRelease, markReleaseRead } from "./releaseNotes";
+import { WhatsNewNotice, WhatsNewView } from "./components/WhatsNew";
 
 function App() {
   const controller = useDisRouteController();
+  const [unreadRelease, setUnreadRelease] = useState(hasUnreadRelease);
+  function dismissRelease() { markReleaseRead(); setUnreadRelease(false); }
+  function changeView(view: AppView) {
+    if (view === "whatsNew") dismissRelease();
+    controller.setView(view);
+  }
 
   return (
     <MotionConfig reducedMotion={import.meta.env.MODE === "test" ? "always" : "user"} transition={transitions.normal}>
@@ -36,7 +46,8 @@ function App() {
             connectionBusy={controller.connected || controller.busy || Boolean(controller.communityBusy) || controller.updatePhase === "downloading" || controller.updatePhase === "installing"}
             error={controller.setupError} notice={controller.setupNotice}
             onCheck={controller.handleCheckPrerequisites} onInstall={controller.handleInstallPrerequisites} />
-          <ViewSwitch view={controller.view} onChange={controller.setView} />
+          <ViewSwitch view={controller.view} onChange={changeView} />
+          {unreadRelease && <WhatsNewNotice onOpen={() => changeView("whatsNew")} onDismiss={dismissRelease} />}
           <ConnectionStatus
             appStatus={controller.appStatus}
             mode={controller.connectionMode}
@@ -44,7 +55,7 @@ function App() {
             discordBusy={controller.discordBusy}
             communityBusy={controller.communityBusy}
             connectDisabled={controller.connectDisabled}
-            inGuide={controller.view === "guide"}
+            inGuide={controller.view !== "connection"}
             onOpenConnection={() => controller.setView("connection")}
             onRestartDiscord={controller.handleRestartDiscord}
             onDisconnect={controller.handleDisconnect}
@@ -119,8 +130,8 @@ function App() {
                 <ConnectionSidebar appStatus={controller.appStatus} />
               </motion.div>
             ) : (
-              <motion.div key="guide" custom={-1} variants={viewVariants} initial="initial" animate="enter" exit="exit" className="guide-view-wrap">
-                <GuideView />
+              <motion.div key={controller.view} custom={-1} variants={viewVariants} initial="initial" animate="enter" exit="exit" className="guide-view-wrap">
+                {controller.view === "guide" ? <GuideView /> : <WhatsNewView />}
               </motion.div>
             )}
           </AnimatePresence>

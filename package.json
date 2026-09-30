@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "node scripts/release-notes.mjs --check && tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "node --test scripts/release-notes.test.mjs && vitest run",
     "test:watch": "vitest",
     "tauri": "tauri",
     "prepare:installer": "node scripts/prepare-installer.mjs",

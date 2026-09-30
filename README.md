@@ -16,7 +16,7 @@
 </div>
 
 > [!IMPORTANT]
-> DisRoute is a preview. In-app updates are cryptographically signed, but the Windows installer is not yet Authenticode-signed and may trigger SmartScreen. DisRoute is not an anonymity, privacy, or leak-prevention product.
+> DisRoute is a preview. In-app updates are cryptographically signed, but the Windows installer is not Authenticode-signed and may trigger SmartScreen. DisRoute is not an anonymity, privacy, or leak-prevention product.
 
 ## What it solves
 
@@ -51,6 +51,8 @@ Open DisRoute, approve the Windows UAC prompt, and select **بررسی آپدی�
 
 Versions `0.5.1` and newer check only when the button is selected; they do not silently check on every launch. Users upgrading from versions older than `0.4.1` must install a current setup package manually once.
 
+Select **تغییرات این آپدیت** to read a release's changes before installing. After installation, **تازه‌های نسخه** (What's new) shows the installed version's notes offline. Its startup notice is dismissible and does not interrupt connections; only the last-read version is stored locally.
+
 ## Features
 
 - Discord-only TCP and UDP process routing; unrelated programs stay on the direct connection
@@ -61,6 +63,7 @@ Versions `0.5.1` and newer check only when the button is selected; they do not s
 - Windows-protected profile storage with explicit save and delete controls
 - Persian RTL interface, system-tray lifecycle, keyboard access, and reduced-motion support
 - Signed in-app releases distributed through GitHub Releases
+- Offline Persian What's new notes, shared with the GitHub Release description
 - Configurable Community sources, cached fallback, local testing, ranking, cancellation, and bounded failover
 - No telemetry, no upload of personal configurations, and no execution of code from remote source data
 
