@@ -2,6 +2,22 @@
 
 Run `npm run check` for frontend tests, TypeScript/build checks and Rust unit tests.
 
+## 0.5.7 verification record (2026-09-30)
+
+- 34 frontend tests, 2 publication tests and 47 Rust tests pass, including production-feature compilation. New regression checks cover mixed fresh/cached sources, complete cached fallback, empty/expired caches, disabled-source error visibility, grouped update headings/lists, Persian direction and the native window icon asset.
+- Desktop and 760×620 browser inspection confirms the vector logo remains 42px wide without clipping or flex shrink. Release-note paragraphs have no individual clipping/scrollbars; the bounded note region is keyboard-accessible. Visual fixture data is not proof of native networking.
+- The opt-in production source fetch/parse diagnostic received valid entries from seven default sources. The Turkey shard returned HTTP 404 at test time; no replacement URL was invented and no private credentials were printed. Local cache metadata independently showed a partial fallback, not an entirely old list. This is a point-in-time observation, not an availability guarantee.
+- The x64 NSIS Release build passes. Network engine, selective Discord routing, firewall rules, updater verification key/download/install logic and persistent profile format are unchanged.
+- Native taskbar rendering after installation, pinned-shortcut cache refresh, real Discord voice/streaming and the end-to-end 0.5.6 → 0.5.7 installed-app update still require manual verification. The running elevated app was not terminated and user caches were not cleared for testing.
+
+Read-only source availability diagnostics (source ids, counts and sanitized errors only; never writes the user's cache or connects Discord):
+
+```powershell
+cargo test --manifest-path src-tauri/Cargo.toml live_source_refresh_metadata -- --ignored --nocapture
+```
+
+The diagnostic reports source failures instead of treating volatile third-party uptime as a deterministic test gate.
+
 ## Actual engine integration
 
 These tests use the pinned sing-box executable, with synthetic loopback-only credentials. They do not change Windows routes or firewall rules.

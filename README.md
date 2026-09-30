@@ -53,6 +53,10 @@ Versions `0.5.1` and newer check only when the button is selected; they do not s
 
 Select **تغییرات این آپدیت** to read a release's changes before installing. After installation, **تازه‌های نسخه** (What's new) shows the installed version's notes offline. Its startup notice is dismissible and does not interrupt connections; only the last-read version is stored locally.
 
+Release notes use headings and lists with Persian/Latin text isolation. Updating downloads the full installer, verifies its signature, then disconnects Discord for installation; saved configurations and community sources remain intact. The window/taskbar icon is set explicitly at startup. If a previously pinned Windows taskbar shortcut keeps its cached old icon, unpin it and pin the newly installed app again.
+
+Community refresh shows fresh and cached sources separately. One unavailable country shard does not make every other source stale. Failed enabled sources show their name and a sanitized HTTP/timeout/connect error next to refresh controls; cached fallback remains available. Country-specific files may temporarily disappear upstream (404); disable a persistently unavailable source in source management rather than repeatedly clearing your cache.
+
 ## Features
 
 - Discord-only TCP and UDP process routing; unrelated programs stay on the direct connection

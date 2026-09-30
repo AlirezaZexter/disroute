@@ -4,6 +4,15 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.7] - 2026-09-30
+
+### Fixed
+
+- Unclipped, non-shrinking vector header logo; explicitly set the native window/taskbar icon from the current bundled logo at startup.
+- Community freshness now distinguishes fresh sources from cached fallback instead of labelling a mixed list entirely old. Enabled-source failures are visible outside collapsed source settings.
+- Sanitized source fetch errors distinguish HTTP status, timeout and connection failure without disclosing subscription URLs.
+- Release descriptions use real headings/lists, stable Persian direction, one keyboard-accessible scroll area and clear installation implications. Routing and updater trust/download logic are unchanged.
+
 ## [0.5.6] - 2026-09-30
 
 ### Added
@@ -136,7 +145,8 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 - Shipped a GUI-only executable with an explicit notification-area icon.
 
-[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.5.6...HEAD
+[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.5.7...HEAD
+[0.5.7]: https://github.com/AlirezaZexter/disroute/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/AlirezaZexter/disroute/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/AlirezaZexter/disroute/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/AlirezaZexter/disroute/compare/v0.5.3...v0.5.4

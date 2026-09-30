@@ -14,7 +14,7 @@ describe("release notes", () => {
     expect(screen.getByRole("heading", { name: "تازه‌های نسخه" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "تازه‌های نسخه" })).toHaveFocus();
     expect(screen.getByText(APP_VERSION)).toHaveAttribute("dir", "ltr");
-    expect(screen.getByRole("heading", { name: "نصب پیش‌نیازها از داخل برنامه" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "لوگوی کامل داخل برنامه" })).toBeInTheDocument();
   });
   it("remembers read/dismissed notes without storing profile data", () => {
     expect(hasUnreadRelease()).toBe(true);
@@ -46,5 +46,14 @@ describe("release notes", () => {
     expect(container.textContent).toContain("<img src=x onerror=alert(1)>");
     expect(container.textContent!.length).toBeLessThan(17000);
     expect(screen.getByText("Changes")).toBeInTheDocument();
+  });
+  it("groups update headings and bullet lists with stable Persian direction", () => {
+    const { container } = render(<ReleasePreview notes={'## تغییرات\nDiscord بهتر نمایش داده می‌شود.\n\n- اصلاح لوگو\n- نظم توضیحات\n\n## قبل از نصب\nاتصال قطع می‌شود.'} />);
+    expect(screen.getByRole("heading", { name: "تغییرات" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "قبل از نصب" })).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(container.querySelector(".release-preview")).toHaveAttribute("dir", "rtl");
+    expect(screen.getByText("Discord")).toHaveAttribute("dir", "ltr");
+    expect(container.querySelector("p")).not.toHaveAttribute("dir", "auto");
   });
 });

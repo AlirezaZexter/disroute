@@ -309,6 +309,10 @@ fn connect_community_inner(
     Err(last_error)
 }
 
+fn window_brand_icon() -> tauri::Result<tauri::image::Image<'static>> {
+    tauri::image::Image::from_bytes(include_bytes!("../icons/128x128.png"))
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -324,6 +328,14 @@ pub fn run() {
                 menu::{Menu, MenuItem},
                 tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
             };
+            // Fresh native window pixels (taskbar + titlebar), independent
+            // of Explorer's cached executable/shortcut icon.
+            if let Some(window) = app.get_webview_window("main") {
+                if let Ok(icon) = window_brand_icon() {
+                    // Cosmetic failures must never prevent the router starting.
+                    let _ = window.set_icon(icon);
+                }
+            }
             let show = MenuItem::with_id(app, "show", "باز کردن DisRoute", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "قطع اتصال و خروج", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;

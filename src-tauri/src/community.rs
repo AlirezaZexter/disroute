@@ -180,6 +180,8 @@ pub struct CommunitySnapshot {
     pub sources: Vec<CommunitySource>,
     pub candidates: Vec<Candidate>,
     pub stale: bool,
+    pub fresh_source_count: usize,
+    pub cached_source_count: usize,
     pub refreshed_at: Option<u64>,
     pub acknowledged_warning: bool,
     pub automatic_failover: bool,
@@ -243,36 +245,7 @@ impl CommunityStore {
     }
 
     pub fn snapshot(&self) -> Result<CommunitySnapshot, String> {
-        let state = self.load()?;
-        let mut candidates = Vec::new();
-        let mut stale = false;
-        let mut refreshed_at = None;
-        let now = now_secs();
-        for source in state.sources.iter().filter(|source| source.enabled) {
-            if let Some(cache) = state.cache.get(&source.id) {
-                candidates.extend(
-                    cache
-                        .candidates
-                        .iter()
-                        .filter(|candidate| candidate.expires_at.is_none_or(|expiry| expiry > now))
-                        .cloned(),
-                );
-                stale |= cache.stale || source_due(source, now);
-                refreshed_at = refreshed_at.max(cache.last_successful_refresh);
-            }
-        }
-        // Interleave sources before the global cap: one large subscription
-        // must not consume all 500 slots and hide the smaller regional feeds.
-        let mut candidates = deduplicate(interleave_sources(candidates));
-        candidates.truncate(DEFAULT_MAX_CONFIGS);
-        Ok(CommunitySnapshot {
-            sources: state.sources,
-            candidates,
-            stale,
-            refreshed_at,
-            acknowledged_warning: state.acknowledged_warning,
-            automatic_failover: state.automatic_failover,
-        })
+        Ok(snapshot_from_state(self.load()?, now_secs()))
     }
 
     pub fn save_sources(&self, sources: Vec<CommunitySource>) -> Result<CommunitySnapshot, String> {
@@ -375,6 +348,7 @@ impl CommunityStore {
         state.history.clear();
         for source in &mut state.sources {
             source.last_successful_refresh = None;
+            source.last_error = None;
         }
         self.save(&state)?;
         self.snapshot()
@@ -469,6 +443,45 @@ impl CommunityStore {
         std::fs::write(&pending, encrypted).map_err(|_| "ذخیرهٔ Community ناموفق بود.")?;
         std::fs::rename(pending, self.path())
             .map_err(|_| "جایگزینی تنظیمات Community ناموفق بود.".to_string())
+    }
+}
+
+fn snapshot_from_state(state: CommunityState, now: u64) -> CommunitySnapshot {
+    let mut candidates = Vec::new();
+    let mut refreshed_at = None;
+    let mut fresh_source_count = 0;
+    let mut cached_source_count = 0;
+    for source in state.sources.iter().filter(|source| source.enabled) {
+        if let Some(cache) = state.cache.get(&source.id) {
+            let valid: Vec<_> = cache
+                .candidates
+                .iter()
+                .filter(|candidate| candidate.expires_at.is_none_or(|expiry| expiry > now))
+                .cloned()
+                .collect();
+            if !valid.is_empty() {
+                if cache.stale || source_due(source, now) {
+                    cached_source_count += 1;
+                } else {
+                    fresh_source_count += 1;
+                }
+            }
+            candidates.extend(valid);
+            refreshed_at = refreshed_at.max(cache.last_successful_refresh);
+        }
+    }
+    // Keep source fairness, expiry filtering and the existing global cap.
+    let mut candidates = deduplicate(interleave_sources(candidates));
+    candidates.truncate(DEFAULT_MAX_CONFIGS);
+    CommunitySnapshot {
+        sources: state.sources,
+        candidates,
+        stale: cached_source_count > 0,
+        fresh_source_count,
+        cached_source_count,
+        refreshed_at,
+        acknowledged_warning: state.acknowledged_warning,
+        automatic_failover: state.automatic_failover,
     }
 }
 
@@ -857,7 +870,18 @@ fn fetch_https(location: &str, timeout_seconds: u32, max_bytes: usize) -> Result
         .get(location)
         .send()
         .and_then(|response| response.error_for_status())
-        .map_err(|_| "دریافت منبع HTTPS ناموفق بود.")?;
+        .map_err(|error| {
+            // Never display reqwest's raw error: it may contain subscription tokens.
+            if let Some(status) = error.status() {
+                format!("سرور منبع پاسخ HTTP {} داد.", status.as_u16())
+            } else if error.is_timeout() {
+                "دریافت منبع بیش از حد طول کشید؛ دوباره تلاش کنید.".into()
+            } else if error.is_connect() {
+                "ارتباط با سرور منبع برقرار نشد؛ دسترسی اینترنت به منبع را بررسی کنید.".into()
+            } else {
+                "دریافت امن منبع ناموفق بود؛ دوباره تلاش کنید.".into()
+            }
+        })?;
     if response
         .content_length()
         .is_some_and(|size| size > max_bytes as u64)
@@ -1264,5 +1288,98 @@ mod tests {
         value.last_successful_refresh = Some(1_000);
         assert!(!source_due(&value, 1_000 + 59 * 60));
         assert!(source_due(&value, 1_000 + 60 * 60));
+    }
+
+    #[test]
+    fn snapshot_distinguishes_partial_and_full_cached_fallback() {
+        let mut fresh = source();
+        fresh.id = "fresh".into();
+        fresh.last_successful_refresh = Some(1_000);
+        let mut old = source();
+        old.last_successful_refresh = Some(100);
+        let candidates = parse_manifest(
+            &manifest("vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls"),
+            &fresh,
+            10,
+        )
+        .unwrap();
+        let mut state = CommunityState {
+            sources: vec![fresh.clone(), old.clone()],
+            ..Default::default()
+        };
+        state.cache.insert(
+            fresh.id.clone(),
+            SourceResult {
+                candidates: candidates.clone(),
+                last_successful_refresh: Some(1_000),
+                ..Default::default()
+            },
+        );
+        state.cache.insert(
+            old.id.clone(),
+            SourceResult {
+                candidates,
+                stale: true,
+                last_successful_refresh: Some(100),
+                ..Default::default()
+            },
+        );
+        let snapshot = snapshot_from_state(state.clone(), 1_010);
+        assert!(snapshot.stale);
+        assert_eq!(
+            (snapshot.fresh_source_count, snapshot.cached_source_count),
+            (1, 1)
+        );
+        state.sources[0].enabled = false;
+        let snapshot = snapshot_from_state(state, 1_010);
+        assert_eq!(
+            (snapshot.fresh_source_count, snapshot.cached_source_count),
+            (0, 1)
+        );
+    }
+
+    #[test]
+    fn expired_cache_does_not_label_a_fresh_list_stale() {
+        let mut value = source();
+        value.last_successful_refresh = Some(1_000);
+        let mut candidates = parse_manifest(
+            &manifest("vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls"),
+            &value,
+            10,
+        )
+        .unwrap();
+        candidates[0].expires_at = Some(1_001);
+        let mut state = CommunityState {
+            sources: vec![value.clone()],
+            ..Default::default()
+        };
+        state.cache.insert(
+            value.id,
+            SourceResult {
+                candidates,
+                stale: true,
+                ..Default::default()
+            },
+        );
+        let snapshot = snapshot_from_state(state, 1_010);
+        assert!(snapshot.candidates.is_empty());
+        assert!(!snapshot.stale);
+        assert_eq!(
+            (snapshot.fresh_source_count, snapshot.cached_source_count),
+            (0, 0)
+        );
+    }
+
+    #[test]
+    #[ignore = "Opt-in network diagnostic: prints only source ids, counts and sanitized errors"]
+    fn live_source_refresh_metadata() {
+        let sources: Vec<CommunitySource> =
+            serde_json::from_str(include_str!("../../docs/community-sources.json")).unwrap();
+        for (id, result) in fetch_sources(&sources) {
+            match result {
+                Ok(value) => println!("{id}: {} validated entries", value.candidates.len()),
+                Err(error) => println!("{id}: {}", redact_secrets(&error)),
+            }
+        }
     }
 }

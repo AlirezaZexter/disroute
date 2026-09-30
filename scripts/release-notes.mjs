@@ -13,7 +13,7 @@ export function formatReleaseNotes(manifest, version) {
   };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(release.date) || !Number.isFinite(Date.parse(release.date))) throw new Error("Invalid release date");
   if (!Array.isArray(release.changes) || !release.changes.length || release.changes.length > 20 || !Array.isArray(release.notes) || release.notes.length > 10) throw new Error("Invalid release sections");
-  return [text(release.summary), "", ...release.changes.flatMap((change) => [`## ${text(change.title)}`, text(change.description), ""]), ...release.notes.map((note) => `- ${text(note)}`)].join("\n");
+  return [text(release.summary), "", ...release.changes.flatMap((change) => [`## ${text(change.title)}`, text(change.description), ""]), ...(release.notes.length ? ["## نکات مهم", ...release.notes.map((note) => `- ${text(note)}`)] : [])].join("\n");
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

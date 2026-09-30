@@ -62,6 +62,8 @@ export interface CommunitySnapshot {
   sources: CommunitySource[];
   candidates: CommunityCandidate[];
   stale: boolean;
+  freshSourceCount?: number;
+  cachedSourceCount?: number;
   refreshedAt?: number | null;
   acknowledgedWarning: boolean;
   automaticFailover: boolean;

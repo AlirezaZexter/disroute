@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { CommunitySnapshot, CommunitySource, HealthResult } from "../types";
 import { listItemVariants, transitions } from "../motion";
 import { SpinnerIcon } from "./Icons";
+import { IsolatedText } from "./IsolatedText";
 
 export type CommunityBusy = "" | "refresh" | "scan" | "connect";
 
@@ -101,13 +102,16 @@ export function CommunityConnectionPanel({
   const best = results[0];
   const workingResults = results.filter((result) => result.working).slice(0, 5);
   const hasEnabledSource = community.sources.some((source) => source.enabled);
+  const failedSources = community.sources.filter((source) => source.enabled && source.lastError);
+  const freshCount = community.freshSourceCount ?? 0;
+  const cachedCount = community.cachedSourceCount ?? 0;
 
   return (
     <motion.form id="community-form" className="panel community-panel" noValidate onSubmit={onSubmit} layout>
       <div className="panel-heading">
         <div><h2>اتصال سریع رایگان</h2><p>منابع مجاز دریافت و با اتصال واقعی آزمایش می‌شوند.</p></div>
         <AnimatePresence initial={false}>
-          {community.stale && <motion.span className="stale-badge" initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={transitions.micro}>فهرست قدیمی</motion.span>}
+          {community.stale && <motion.span className="stale-badge" initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={transitions.micro}>{freshCount > 0 ? "بخشی از منابع ذخیره‌شده است" : "استفاده از فهرست ذخیره‌شده"}</motion.span>}
         </AnimatePresence>
       </div>
 
@@ -124,7 +128,7 @@ export function CommunityConnectionPanel({
       ) : (
         <motion.div className="community-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={transitions.normal}>
           <div className="community-toolbar">
-            <div><span>آخرین نوسازی</span><strong>{formatTime(community.refreshedAt)}</strong></div>
+            <div><span>آخرین دریافت موفق</span><strong>{formatTime(community.refreshedAt)}</strong></div>
             <button className="button button-secondary compact" type="button" disabled={busy !== "" || !hasEnabledSource} aria-busy={busy === "refresh"} onClick={onRefresh}>
               {busy === "refresh" && <SpinnerIcon />}<span>{busy === "refresh" ? "در حال دریافت…" : "نوسازی منابع"}</span>
             </button>
@@ -133,6 +137,17 @@ export function CommunityConnectionPanel({
             </button>
             {busy === "scan" && <button className="text-button" type="button" onClick={onCancelScan}>لغو</button>}
           </div>
+
+          {(community.stale || failedSources.length > 0) && <div className="source-refresh-status" role="status" aria-live="polite">
+            <p>{community.stale
+              ? freshCount > 0
+                ? `${freshCount.toLocaleString("fa-IR")} منبع به‌روز است؛ برای ${cachedCount.toLocaleString("fa-IR")} منبع از فهرست ذخیره‌شده استفاده می‌شود.`
+                : "دریافت فهرست تازه موفق نبود یا زمان نوسازی آن گذشته است. فهرست ذخیره‌شده ممکن است قدیمی باشد."
+              : community.candidates.length > 0
+                ? "بعضی منابع دریافت نشدند؛ فهرست فعلی از منابع در دسترس تهیه شده است."
+                : "فهرستی دریافت نشد. خطای منابع را بررسی و دوباره نوسازی کنید."}</p>
+            {failedSources.length > 0 && <><ul>{failedSources.map(source => <li key={source.id}><bdi dir="auto">{source.name}</bdi>: <IsolatedText text={source.lastError!} /></li>)}</ul><p>دوباره «نوسازی منابع» را بزنید؛ اگر خطا ادامه داشت، منبع را در «مدیریت منابع» غیرفعال کنید.</p></>}
+          </div>}
 
           <AnimatePresence initial={false}>
             {(busy !== "" || results.length > 0 || connected) && <CommunityProgress busy={busy} hasResults={results.length > 0} connected={connected} />}
@@ -188,7 +203,7 @@ export function CommunityConnectionPanel({
                     <motion.li layout key={source.id} variants={listItemVariants} initial="initial" animate="enter" exit="exit">
                       <label className="source-toggle">
                         <input type="checkbox" checked={source.enabled} onChange={(event) => onReplaceSources(community.sources.map((item) => item.id === source.id ? { ...item, enabled: event.target.checked } : item))} />
-                        <span><strong>{source.name}</strong><small>{source.attribution} · {formatTime(source.lastSuccessfulRefresh)}</small>{source.lastError && <em role="alert">{source.lastError}</em>}</span>
+                        <span><strong><bdi dir="auto">{source.name}</bdi></strong><small><bdi dir="auto">{source.attribution}</bdi> · {formatTime(source.lastSuccessfulRefresh)}</small>{source.lastError && <em role="alert"><IsolatedText text={source.lastError} /></em>}</span>
                       </label>
                       <button className="text-button danger-text" type="button" onClick={() => onReplaceSources(community.sources.filter((item) => item.id !== source.id))}>حذف</button>
                     </motion.li>

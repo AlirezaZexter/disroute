@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import type { UpdateProgress } from "../updater";
 import { collapseVariants, transitions } from "../motion";
 import { SpinnerIcon } from "./Icons";
-import brandIcon from "../../src-tauri/icons/128x128.png";
+import brandIcon from "../../assets/disroute-logo.svg";
 import { APP_VERSION } from "../releaseNotes";
 import { ReleasePreview } from "./WhatsNew";
 
@@ -75,8 +75,8 @@ export function UpdateNotice({ phase, info, progress, error, onInstall, onClose 
       aria-busy={phase === "downloading" || phase === "installing"}
     >
       <div className="update-copy">
-        <span className="section-label">آپدیت DisRoute</span>
-        {phase === "available" && <><strong>نسخه <bdi dir="ltr">{info?.version}</bdi> آماده است</strong><p>نسخهٔ جدید از GitHub دانلود و پس از بررسی امضا نصب می‌شود.</p>{info?.notes && <details className="update-release-details"><summary>تغییرات این آپدیت</summary><ReleasePreview notes={info.notes} /></details>}</>}
+        <h2 className="section-label">آپدیت DisRoute</h2>
+        {phase === "available" && <><strong>نسخهٔ <bdi dir="ltr">{info?.version}</bdi> آماده است</strong><p>فایل نصب دانلود می‌شود؛ پس از بررسی امضا، اتصال Discord قطع و نصب آغاز می‌شود. کانفیگ ذخیره‌شده باقی می‌ماند.</p>{info?.notes && <details className="update-release-details" open><summary>تغییرات این آپدیت</summary><ReleasePreview notes={info.notes} /></details>}</>}
         {phase === "current" && <><strong>نسخه جدیدی منتشر نشده</strong><p>همین نسخه، آخرین نسخهٔ موجود است.</p></>}
         {phase === "downloading" && <><strong>در حال دانلود نسخهٔ <bdi dir="ltr">{info?.version}</bdi></strong><p>{progress.percent === undefined ? "در حال دریافت فایل…" : `${progress.percent.toLocaleString("fa-IR")}٪ دریافت شده`} · <bdi dir="ltr">{(progress.downloaded / 1048576).toFixed(1)}{progress.total ? ` / ${(progress.total / 1048576).toFixed(1)}` : ""} MB</bdi>{!!progress.bytesPerSecond && <> · <bdi dir="ltr">{(progress.bytesPerSecond / 1024).toFixed(0)} KB/s</bdi></>}</p><p>آپدیت، فایل کامل نصب را دریافت می‌کند؛ فقط تغییرات دانلود نمی‌شوند.</p></>}
         {phase === "installing" && <><strong>در حال نصب</strong><p>پس از پایان نصب، DisRoute دوباره اجرا می‌شود.</p></>}
