@@ -4,6 +4,18 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.8] - 2026-10-10
+
+### Added
+
+- Live connection panel with certificate-verified Discord HTTPS response time, elapsed session duration, the last 24 checks and a manual check action. Measurements are in memory and do not represent voice ping or upload speed.
+
+### Fixed
+
+- Community recovery now requires three consecutive failed checks, tests the replacement separately and backs off after failed attempts. Personal connections never switch to community endpoints automatically.
+- Status polling continues after disconnection, waits for slow requests and ignores results from cancelled sessions. Old success measurements are not shown as current connectivity.
+- Explicit disconnect prevents an in-flight recovery result from restoring active UI state. Discord-only routing rules, profile storage and updater trust are unchanged.
+
 ## [0.5.7] - 2026-09-30
 
 ### Fixed
@@ -145,7 +157,8 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 - Shipped a GUI-only executable with an explicit notification-area icon.
 
-[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.5.7...HEAD
+[Unreleased]: https://github.com/AlirezaZexter/disroute/compare/v0.5.8...HEAD
+[0.5.8]: https://github.com/AlirezaZexter/disroute/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/AlirezaZexter/disroute/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/AlirezaZexter/disroute/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/AlirezaZexter/disroute/compare/v0.5.4...v0.5.5

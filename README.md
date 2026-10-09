@@ -69,6 +69,7 @@ Community refresh shows fresh and cached sources separately. One unavailable cou
 - Signed in-app releases distributed through GitHub Releases
 - Offline Persian What's new notes, shared with the GitHub Release description
 - Configurable Community sources, cached fallback, local testing, ranking, cancellation, and bounded failover
+- [Live connection health](docs/CONNECTION-HEALTH.md): Discord HTTPS response time, session duration, recent checks and manual testing; Community recovery after consecutive failures with increasing retry intervals
 - No telemetry, no upload of personal configurations, and no execution of code from remote source data
 
 ## Community Quick Connect
