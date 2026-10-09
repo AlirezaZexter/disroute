@@ -2,6 +2,7 @@ import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react
 import { transitions, panelVariants, viewVariants } from "./motion";
 import { AppFooter, TopBar, UpdateNotice, ViewSwitch, WorkspaceHeading } from "./components/AppChrome";
 import { ConnectionStatus } from "./components/ConnectionStatus";
+import { ConnectionHealthPanel } from "./components/ConnectionHealthPanel";
 import { PersonalConnectionPanel } from "./components/PersonalConnectionPanel";
 import { CommunityConnectionPanel } from "./components/CommunityConnectionPanel";
 import { ConnectionSidebar } from "./components/ConnectionSidebar";
@@ -59,7 +60,12 @@ function App() {
             onOpenConnection={() => controller.setView("connection")}
             onRestartDiscord={controller.handleRestartDiscord}
             onDisconnect={controller.handleDisconnect}
+            health={controller.connectionHealth}
           />
+          {controller.view === "connection" && <ConnectionHealthPanel
+            health={controller.connectionHealth} connected={controller.connected}
+            busy={controller.healthBusy || controller.busy || Boolean(controller.communityBusy)}
+            error={controller.healthError} onCheck={controller.handleHealthCheck} />}
 
           <AnimatePresence initial={false} mode="popLayout" custom={controller.view === "connection" ? 1 : -1}>
             {controller.view === "connection" ? (

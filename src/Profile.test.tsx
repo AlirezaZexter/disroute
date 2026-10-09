@@ -5,13 +5,15 @@ import * as api from "./api";
 import App from "./App";
 import type { PrerequisiteStatus } from "./types";
 
-vi.mock('./api', () => ({ checkPrerequisites: vi.fn(), installPrerequisites: vi.fn(), getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined), restartDiscord: vi.fn(), getCommunitySnapshot: vi.fn(), saveCommunitySources: vi.fn(), setCommunityPreferences: vi.fn(), refreshCommunity: vi.fn(), scanCommunity: vi.fn(), cancelCommunityScan: vi.fn(), clearCommunityData: vi.fn(), connectCommunity: vi.fn() }));
+vi.mock('./api', () => ({ getConnectionHealth: vi.fn(), checkConnectionHealth: vi.fn(), checkPrerequisites: vi.fn(), installPrerequisites: vi.fn(), getStatus: vi.fn(), loadProfile: vi.fn(), saveProfile: vi.fn(), forgetProfile: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), hideToTray: vi.fn().mockResolvedValue(undefined), restartDiscord: vi.fn(), getCommunitySnapshot: vi.fn(), saveCommunitySources: vi.fn(), setCommunityPreferences: vi.fn(), refreshCommunity: vi.fn(), scanCommunity: vi.fn(), cancelCommunityScan: vi.fn(), clearCommunityData: vi.fn(), connectCommunity: vi.fn() }));
 const profile = { name: 'My route', configLink: 'vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls' };
 const status = { status: 'disconnected' as const, engineReady: true, isElevated: true, message: 'ready' };
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(api.checkPrerequisites).mockResolvedValue(null);
   vi.mocked(api.getStatus).mockResolvedValue(status);
+  vi.mocked(api.getConnectionHealth).mockResolvedValue(null);
+  vi.mocked(api.checkConnectionHealth).mockResolvedValue(null);
   vi.mocked(api.loadProfile).mockResolvedValue(profile);
   vi.mocked(api.saveProfile).mockResolvedValue();
   vi.mocked(api.forgetProfile).mockResolvedValue();

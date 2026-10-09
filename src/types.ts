@@ -1,5 +1,16 @@
 export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
+export interface ConnectionHealth {
+  phase: "idle" | "checking" | "healthy" | "degraded" | "unavailable" | "recovering";
+  mode: "personal" | "community" | null;
+  connectedAt: number | null;
+  checkedAt: number | null;
+  latencyMs: number | null;
+  consecutiveFailures: number;
+  recoveries: number;
+  samples: { checkedAt: number; latencyMs: number | null }[];
+}
+
 export interface PrerequisiteStatus {
   packetFilter: boolean;
   visualCpp: boolean;

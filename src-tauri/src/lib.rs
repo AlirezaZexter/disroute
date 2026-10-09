@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod branding_tests;
 mod community;
+mod connection_health;
 mod discord;
 mod engine;
 mod health;
@@ -10,6 +11,7 @@ mod profile_store;
 mod voice_proxy;
 
 use community::{CommunitySnapshot, CommunitySource, HealthResult};
+use connection_health::{Monitor, Snapshot as ConnectionHealth};
 use engine::EngineManager;
 use health::ScanControl;
 use model::{AppStatus, ProxyProfile};
@@ -46,6 +48,55 @@ fn show_main(app: &AppHandle) {
 #[tauri::command]
 fn get_status(app: AppHandle, manager: State<'_, Mutex<EngineManager>>) -> AppStatus {
     manager.lock().expect("engine lock poisoned").status(&app)
+}
+
+#[tauri::command]
+fn get_connection_health(monitor: State<'_, Mutex<Monitor>>) -> Result<ConnectionHealth, String> {
+    monitor
+        .lock()
+        .map(|m| m.snapshot())
+        .map_err(|_| "خواندن وضعیت اتصال ممکن نشد.".into())
+}
+
+// Caller holds SetupControl so probes cannot overlap connection setup or scanning.
+fn probe_active_connection(app: &AppHandle) -> Result<ConnectionHealth, String> {
+    let monitor = app.state::<Mutex<Monitor>>();
+    let generation = {
+        let m = monitor.lock().map_err(|_| "خواندن وضعیت اتصال ممکن نشد.")?;
+        if !m.active() {
+            return Ok(m.snapshot());
+        }
+        m.generation()
+    };
+    let running = app
+        .state::<Mutex<EngineManager>>()
+        .lock()
+        .map_err(|_| "خواندن وضعیت موتور ممکن نشد.")?
+        .status(app)
+        .status
+        == "connected";
+    let latency = if running {
+        health::active_https_latency().ok()
+    } else {
+        None
+    };
+    let mut m = monitor.lock().map_err(|_| "ثبت نتیجهٔ بررسی ممکن نشد.")?;
+    m.record(generation, latency, community::now_secs());
+    Ok(m.snapshot())
+}
+
+#[tauri::command]
+async fn check_connection_health(app: AppHandle) -> Result<ConnectionHealth, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let setup = app.state::<SetupControl>();
+        let _operation = setup
+            .0
+            .try_lock()
+            .map_err(|_| "عملیات دیگری در حال اجراست؛ کمی بعد دوباره بررسی کنید.")?;
+        probe_active_connection(&app)
+    })
+    .await
+    .map_err(|_| "بررسی اتصال متوقف شد.".to_string())?
 }
 
 #[tauri::command]
@@ -95,10 +146,15 @@ async fn start_tunnel(
         .lock()
         .map_err(|_| "failover lock poisoned")?
         .clear();
-    manager
+    let status = manager
         .lock()
         .map_err(|_| "engine lock poisoned")?
-        .start(&app, &profile)
+        .start(&app, &profile)?;
+    app.state::<Mutex<Monitor>>()
+        .lock()
+        .map_err(|_| "monitor lock poisoned")?
+        .begin("personal", community::now_secs());
+    Ok(status)
 }
 
 #[tauri::command]
@@ -111,6 +167,11 @@ fn stop_tunnel(
         .lock()
         .map_err(|_| "failover lock poisoned")?
         .clear();
+    // Invalidate measurements before stopping; a completed old probe cannot revive UI state.
+    app.state::<Mutex<Monitor>>()
+        .lock()
+        .map_err(|_| "monitor lock poisoned")?
+        .stop();
     manager
         .lock()
         .map_err(|_| "engine lock poisoned")?
@@ -298,6 +359,10 @@ fn connect_community_inner(
             Ok(status) => {
                 let _ = store.record_result(&id, true);
                 plan.remaining = candidate_ids[index + 1..].to_vec();
+                app.state::<Mutex<Monitor>>()
+                    .lock()
+                    .map_err(|_| "monitor lock poisoned")?
+                    .begin("community", community::now_secs());
                 return Ok(status);
             }
             Err(error) => {
@@ -322,6 +387,7 @@ pub fn run() {
         .manage(Mutex::new(EngineManager::default()))
         .manage(Mutex::new(ScanControl::default()))
         .manage(Mutex::new(FailoverPlan::default()))
+        .manage(Mutex::new(Monitor::default()))
         .manage(SetupControl::default())
         .setup(|app| {
             use tauri::{
@@ -386,11 +452,14 @@ pub fn run() {
                 let Ok(_operation) = setup.0.try_lock() else {
                     continue;
                 };
-                let disconnected = failover_app
-                    .state::<Mutex<EngineManager>>()
+                let _ = probe_active_connection(&failover_app);
+                if !failover_app
+                    .state::<Mutex<Monitor>>()
                     .lock()
-                    .map(|mut manager| manager.status(&failover_app).status == "disconnected")
-                    .unwrap_or(false);
+                    .is_ok_and(|m| m.recovery_due(std::time::Instant::now()))
+                {
+                    continue;
+                }
                 let Ok(store) = community_store(&failover_app) else {
                     continue;
                 };
@@ -405,9 +474,6 @@ pub fn run() {
                     .map(|plan| plan.remaining.is_empty())
                     .unwrap_or(true)
                 {
-                    continue;
-                }
-                if !disconnected && health::active_https_available() {
                     continue;
                 }
                 let next = failover_app
@@ -441,6 +507,9 @@ pub fn run() {
                     Ok(path) => path.join("community-tests"),
                     Err(_) => continue,
                 };
+                if let Ok(mut m) = failover_app.state::<Mutex<Monitor>>().lock() {
+                    m.recovering(std::time::Instant::now());
+                }
                 let result = health::scan(
                     vec![candidate.clone()],
                     engine_dir.join("sing-box.exe"),
@@ -467,6 +536,9 @@ pub fn run() {
                         .snapshot()
                         .is_ok_and(|snapshot| snapshot.automatic_failover)
                     {
+                        if let Ok(mut m) = failover_app.state::<Mutex<Monitor>>().lock() {
+                            m.recovery_failed();
+                        }
                         continue;
                     }
                     let profile = ProxyProfile {
@@ -481,11 +553,27 @@ pub fn run() {
                         .is_some()
                     {
                         let _ = store.record_result(&id, true);
+                        if let Ok(mut m) = failover_app.state::<Mutex<Monitor>>().lock() {
+                            m.recovered();
+                        }
                     } else {
                         let _ = store.record_result(&id, false);
+                        if let Ok(mut m) = failover_app.state::<Mutex<Monitor>>().lock() {
+                            m.recovery_failed();
+                        }
                     }
                 } else {
                     let _ = store.record_result(&id, false);
+                    // A manual disconnect invalidates this background operation.
+                    if failover_app
+                        .state::<Mutex<FailoverPlan>>()
+                        .lock()
+                        .is_ok_and(|p| p.generation == generation)
+                    {
+                        if let Ok(mut m) = failover_app.state::<Mutex<Monitor>>().lock() {
+                            m.recovery_failed();
+                        }
+                    }
                 }
             });
             Ok(())
@@ -500,6 +588,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             hide_to_tray,
             get_status,
+            get_connection_health,
+            check_connection_health,
             check_prerequisites,
             install_prerequisites,
             save_profile,

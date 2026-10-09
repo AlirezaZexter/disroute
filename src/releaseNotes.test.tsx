@@ -14,7 +14,9 @@ describe("release notes", () => {
     expect(screen.getByRole("heading", { name: "تازه‌های نسخه" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "تازه‌های نسخه" })).toHaveFocus();
     expect(screen.getByText(APP_VERSION)).toHaveAttribute("dir", "ltr");
-    expect(screen.getByRole("heading", { name: "لوگوی کامل داخل برنامه" })).toBeInTheDocument();
+    for (const change of currentRelease.changes) {
+      expect(screen.getByRole("heading", { name: change.title })).toBeInTheDocument();
+    }
   });
   it("remembers read/dismissed notes without storing profile data", () => {
     expect(hasUnreadRelease()).toBe(true);

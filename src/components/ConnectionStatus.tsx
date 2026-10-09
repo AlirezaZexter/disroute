@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import type { AppStatus } from "../types";
+import type { AppStatus, ConnectionHealth } from "../types";
 import { transitions } from "../motion";
 import { SpinnerIcon } from "./Icons";
 
@@ -22,6 +22,7 @@ function connectLabel(mode: ConnectionMode, busy: boolean, communityBusy: Commun
 }
 
 interface ConnectionStatusProps {
+  health?: ConnectionHealth | null;
   appStatus: AppStatus;
   mode: ConnectionMode;
   busy: boolean;
@@ -35,6 +36,7 @@ interface ConnectionStatusProps {
 }
 
 export function ConnectionStatus({
+  health,
   appStatus,
   mode,
   busy,
@@ -49,11 +51,14 @@ export function ConnectionStatus({
   const connected = appStatus.status === "connected";
   const working = busy || discordBusy || communityBusy !== "";
   const label = connectLabel(mode, busy, communityBusy);
+  const recovering = health?.phase === "recovering";
+  const impaired = health?.phase === "degraded" || health?.phase === "unavailable";
+  const title = recovering ? "در حال بازیابی اتصال" : connected && impaired ? "اتصال نیاز به بررسی دارد" : statusTitles[appStatus.status];
 
   return (
     <motion.section
       layout="position"
-      className={`status-card status-${appStatus.status}`}
+      className={`status-card status-${appStatus.status}${impaired || recovering ? " status-impaired" : ""}`}
       role={appStatus.status === "error" ? "alert" : "status"}
       aria-live={appStatus.status === "error" ? "assertive" : "polite"}
       aria-busy={working}
@@ -71,27 +76,27 @@ export function ConnectionStatus({
         <div className="status-title-stack">
           <AnimatePresence initial={false} mode="popLayout">
             <motion.h2
-              key={appStatus.status}
+              key={title}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -3 }}
               transition={transitions.micro}
             >
-              {statusTitles[appStatus.status]}
+              {title}
             </motion.h2>
           </AnimatePresence>
         </div>
         <AnimatePresence initial={false} mode="popLayout">
           <motion.p key={appStatus.message} dir="auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={transitions.micro}>
-            {appStatus.message}
+            {impaired || recovering ? "نتیجهٔ بررسی مسیر را در پنل وضعیت زنده دنبال کنید." : appStatus.message}
           </motion.p>
         </AnimatePresence>
       </div>
       <div className="status-controls">
         <AnimatePresence initial={false} mode="wait">
-          {connected ? (
+          {connected || recovering ? (
             <motion.div className="actions status-actions" key="connected" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={transitions.micro}>
-              <button className="button button-secondary" type="button" onClick={onRestartDiscord} disabled={busy || discordBusy} aria-busy={discordBusy}>
+              <button className="button button-secondary" type="button" onClick={onRestartDiscord} disabled={busy || discordBusy || recovering} aria-busy={discordBusy}>
                 {discordBusy && <SpinnerIcon />}<span>{discordBusy ? "در حال اجرا…" : "Restart Discord"}</span>
               </button>
               <button className="button button-danger" type="button" onClick={onDisconnect} disabled={busy || discordBusy} aria-busy={busy}>

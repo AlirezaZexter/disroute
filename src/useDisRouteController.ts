@@ -9,6 +9,8 @@ import {
   forgetProfile,
   getCommunitySnapshot,
   getStatus,
+  getConnectionHealth,
+  checkConnectionHealth,
   checkPrerequisites,
   installPrerequisites,
   hideToTray,
@@ -20,7 +22,7 @@ import {
   scanCommunity,
   setCommunityPreferences,
 } from "./api";
-import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile, PrerequisiteStatus } from "./types";
+import type { AppStatus, ConnectionHealth, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile, PrerequisiteStatus } from "./types";
 import { downloadAndInstall, findUpdate, type UpdateProgress } from "./updater";
 import type { AppView, UpdatePhase } from "./components/AppChrome";
 import type { CommunityBusy, SourceDraft } from "./components/CommunityConnectionPanel";
@@ -52,6 +54,10 @@ function sourceId() {
 export function useDisRouteController() {
   const [profile, setProfile] = useState(initialProfile);
   const [appStatus, setAppStatus] = useState(emptyStatus);
+  const [connectionHealth, setConnectionHealth] = useState<ConnectionHealth | null>(null);
+  const [healthBusy, setHealthBusy] = useState(false);
+  const [healthError, setHealthError] = useState("");
+  const healthEpoch = useRef(0);
   const [busy, setBusy] = useState(false);
   const [discordBusy, setDiscordBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -139,10 +145,36 @@ export function useDisRouteController() {
   }
 
   useEffect(() => {
-    if (busy || discordBusy || !connected) return;
-    const timer = window.setInterval(() => { getStatus().then(setAppStatus).catch(() => {}); }, 5000);
-    return () => window.clearInterval(timer);
-  }, [busy, discordBusy, connected]);
+    if (busy || discordBusy || communityBusy || setupBusy === "install") return;
+    let cancelled = false;
+    let timer: number;
+    async function poll() {
+      try {
+        const [status, health] = await Promise.all([getStatus(), getConnectionHealth()]);
+        if (!cancelled) {
+          // Keep a failed connection's actionable error until a new connection or explicit action.
+          setAppStatus(previous => previous.status === "error" && status.status === "disconnected"
+            ? { ...status, status: "error", message: previous.message } : status);
+          setConnectionHealth(health);
+        }
+      } catch { /* Retain the last state; its measurement becomes stale visibly. */ }
+      finally { if (!cancelled) timer = window.setTimeout(poll, 5000); }
+    }
+    // Poll even while disconnected: background recovery may restore the engine.
+    timer = window.setTimeout(poll, 1000);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [busy, discordBusy, communityBusy, setupBusy]);
+
+  async function handleHealthCheck() {
+    if (healthBusy || busy || communityBusy || !connected) return;
+    const epoch = healthEpoch.current;
+    setHealthBusy(true); setHealthError("");
+    try {
+      const health = await checkConnectionHealth();
+      if (epoch === healthEpoch.current) setConnectionHealth(health);
+    } catch { if (epoch === healthEpoch.current) setHealthError("بررسی کامل نشد؛ کمی بعد دوباره امتحان کنید."); }
+    finally { setHealthBusy(false); }
+  }
 
   const updateProfile = <K extends keyof ProxyProfile>(key: K, value: ProxyProfile[K]) => {
     setProfile((current) => ({ ...current, [key]: value }));
@@ -185,6 +217,8 @@ export function useDisRouteController() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (setupBusy || !setupReady || setupError) return;
+    healthEpoch.current += 1;
+    setHealthError("");
     setBusy(true);
     setAppStatus((current) => ({ ...current, status: "connecting", message: "در حال اتصال…" }));
     try {
@@ -195,6 +229,8 @@ export function useDisRouteController() {
   }
 
   async function handleDisconnect() {
+    healthEpoch.current += 1;
+    setConnectionHealth(null); setHealthError("");
     setBusy(true);
     try { setAppStatus(await disconnect()); }
     catch (error) { setAppStatus((current) => ({ ...current, status: "error", message: String(error) })); }
@@ -250,6 +286,8 @@ export function useDisRouteController() {
     event.preventDefault();
     if (setupBusy || !setupReady || setupError) return;
     if (!community.acknowledgedWarning || communityBusy) return;
+    healthEpoch.current += 1;
+    setHealthError("");
     setCommunityError("");
     try {
       setCommunityBusy("refresh");
@@ -339,7 +377,7 @@ export function useDisRouteController() {
     : communityBusy !== "" || !community.acknowledgedWarning || !community.sources.some((source) => source.enabled));
 
   return {
-    profile, appStatus, busy, discordBusy, loading, remember, saved, notice, showSecret, confirmForget,
+    profile, appStatus, connectionHealth, healthBusy, healthError, handleHealthCheck, busy, discordBusy, loading, remember, saved, notice, showSecret, confirmForget,
     view, connectionMode, community, communityResults, communityBusy, communityError, warningChecked,
     sourceDraft, updatePhase, updateInfo, updateProgress, updateError, connected, detectedProtocol,
     hasConfig, unsupportedConfig, configInvalid, connectDisabled,

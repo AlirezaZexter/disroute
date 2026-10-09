@@ -378,9 +378,10 @@ fn https_sample(port: u16) -> Result<u64, String> {
     Ok(started.elapsed().as_millis().min(u64::MAX as u128) as u64)
 }
 
-pub(crate) fn active_https_available() -> bool {
-    // Require two failures before replacing an otherwise running tunnel.
-    https_sample(2080).is_ok() || https_sample(2080).is_ok()
+pub(crate) fn active_https_latency() -> Result<u64, String> {
+    // Certificate-verified Discord request through the active local SOCKS bridge.
+    // No environment proxy discovery or direct fallback; no routing mutation.
+    https_sample(2080)
 }
 
 fn test_udp_dns(port: u16) -> Result<(), String> {

@@ -2,6 +2,30 @@
 
 Run `npm run check` for frontend tests, TypeScript/build checks and Rust unit tests.
 
+## 0.5.8 local verification (2026-10-10)
+
+- `npm run check`: 40 frontend tests, 2 publication tests, 52 Rust tests and the
+  production frontend build pass. Six opt-in Rust tests are excluded by default.
+- Two of those opt-in checks were run separately and passed: the actual isolated
+  sing-box authentication/failure/cleanup test and bundled prerequisite checksum
+  verification. No Firewall rules, drivers or user's active tunnel were changed.
+- The production `custom-protocol` Release build and x64 NSIS installer both
+  passed. The local bundle intentionally skips updater signature generation;
+  signing the public updater artifacts remains the release workflow's job.
+- New regression coverage includes three-failure recovery, increasing cooldown,
+  ignoring old results after disconnect, personal-mode exclusion, bounded history,
+  stale measurements, manual checks, and polling after background recovery.
+- The real React panels were inspected at 1080×780 and 760×620 with clearly
+  labelled fixture values for healthy/recovering states, plus the actual browser
+  preview's disconnected state. No horizontal overflow or browser errors were
+  found. Fixture values do not establish real network performance.
+- Pending manual validation: live Discord HTTPS on the installed build, recovery
+  through real third-party endpoints, Discord voice/streaming and installing via
+  the signed public updater. No public release or updater manifest is changed by
+  this local verification.
+
+See [connection health](CONNECTION-HEALTH.md) for measurement limits and lifecycle.
+
 ## 0.5.7 verification record (2026-09-30)
 
 - 34 frontend tests, 2 publication tests and 47 Rust tests pass, including production-feature compilation. New regression checks cover mixed fresh/cached sources, complete cached fallback, empty/expired caches, disabled-source error visibility, grouped update headings/lists, Persian direction and the native window icon asset.

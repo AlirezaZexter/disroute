@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppStatus, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile, PrerequisiteStatus, PrerequisiteInstallResult } from "./types";
+import type { AppStatus, ConnectionHealth, CommunitySnapshot, CommunitySource, HealthResult, ProxyProfile, PrerequisiteStatus, PrerequisiteInstallResult } from "./types";
 
 const browserFallback: AppStatus = {
   status: "disconnected",
@@ -26,6 +26,14 @@ export async function hideToTray(): Promise<void> {
 
 export async function getStatus(): Promise<AppStatus> {
   return isTauri() ? invoke<AppStatus>("get_status") : browserFallback;
+}
+
+export async function getConnectionHealth(): Promise<ConnectionHealth | null> {
+  return isTauri() ? invoke("get_connection_health") : null;
+}
+
+export async function checkConnectionHealth(): Promise<ConnectionHealth | null> {
+  return isTauri() ? invoke("check_connection_health") : null;
 }
 
 export async function saveProfile(profile: ProxyProfile): Promise<void> {
