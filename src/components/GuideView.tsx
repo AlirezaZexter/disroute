@@ -24,7 +24,7 @@ const steps = [
   },
   {
     title: "پنجره را به System tray بفرستید",
-    copy: <p><bdi dir="ltr">Minimize to system tray</bdi> فقط پنجره را می‌بندد و اتصال روشن می‌ماند. برای خروج کامل، از منوی آیکون DisRoute کنار ساعت ویندوز استفاده کنید.</p>,
+    copy: <p>دکمهٔ <bdi dir="ltr">Minimize</bdi> بالای پنجره، برنامه را به <bdi dir="ltr">System tray</bdi> می‌فرستد و اتصال روشن می‌ماند. برای خروج کامل، از منوی آیکون DisRoute کنار ساعت ویندوز استفاده کنید.</p>,
   },
 ];
 

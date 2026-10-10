@@ -13,10 +13,17 @@ import { useState } from "react";
 import type { AppView } from "./components/AppChrome";
 import { hasUnreadRelease, markReleaseRead } from "./releaseNotes";
 import { WhatsNewNotice, WhatsNewView } from "./components/WhatsNew";
+import { readAppearance, saveAppearance, type Appearance } from "./appearance";
 
 function App() {
   const controller = useDisRouteController();
   const [unreadRelease, setUnreadRelease] = useState(hasUnreadRelease);
+  const [appearance, setAppearance] = useState<Appearance>(readAppearance);
+  function toggleAppearance() {
+    const next = appearance === "light" ? "dark" : "light";
+    saveAppearance(next);
+    setAppearance(next);
+  }
   function dismissRelease() { markReleaseRead(); setUnreadRelease(false); }
   function changeView(view: AppView) {
     if (view === "whatsNew") dismissRelease();
@@ -26,122 +33,130 @@ function App() {
   return (
     <MotionConfig reducedMotion={import.meta.env.MODE === "test" ? "always" : "user"} transition={transitions.normal}>
       <LayoutGroup>
-        <main className="shell">
-          <TopBar updatePhase={controller.updatePhase} onCheckUpdates={controller.handleCheckUpdates} onHideToTray={controller.hideToTray} />
+        <main className="shell" data-appearance={appearance}>
+          <TopBar updatePhase={controller.updatePhase} onCheckUpdates={controller.handleCheckUpdates} onHideToTray={controller.hideToTray}
+            appearance={appearance} onToggleAppearance={toggleAppearance} />
+          <div className="app-workspace">
+            <aside className="app-navigation">
+              <span className="navigation-caption">فضای کار</span>
+              <ViewSwitch view={controller.view} onChange={changeView} />
+              <div className="navigation-note"><strong>مسیریابی انتخابی</strong><p>بازی‌ها و سایر برنامه‌ها مستقیم می‌مانند.</p></div>
+            </aside>
+            <div className="workspace-main">
 
-          <AnimatePresence initial={false}>
-            {controller.updatePhase !== "idle" && controller.updatePhase !== "checking" && (
-              <UpdateNotice
-                phase={controller.updatePhase}
-                info={controller.updateInfo}
-                progress={controller.updateProgress}
-                error={controller.updateError}
-                onInstall={controller.handleInstallUpdate}
-                onClose={() => controller.setUpdatePhase("idle")}
+              <AnimatePresence initial={false}>
+                {controller.updatePhase !== "idle" && controller.updatePhase !== "checking" && (
+                  <UpdateNotice
+                    phase={controller.updatePhase}
+                    info={controller.updateInfo}
+                    progress={controller.updateProgress}
+                    error={controller.updateError}
+                    onInstall={controller.handleInstallUpdate}
+                    onClose={() => controller.setUpdatePhase("idle")}
+                  />
+                )}
+              </AnimatePresence>
+
+              <WorkspaceHeading view={controller.view} />
+              <PrerequisitePanel status={controller.prerequisites} busy={controller.setupBusy} ready={controller.setupReady && !controller.setupError}
+                connectionBusy={controller.connected || controller.busy || Boolean(controller.communityBusy) || controller.updatePhase === "downloading" || controller.updatePhase === "installing"}
+                error={controller.setupError} notice={controller.setupNotice}
+                onCheck={controller.handleCheckPrerequisites} onInstall={controller.handleInstallPrerequisites} />
+              {unreadRelease && <WhatsNewNotice onOpen={() => changeView("whatsNew")} onDismiss={dismissRelease} />}
+              <ConnectionStatus
+                appStatus={controller.appStatus}
+                mode={controller.connectionMode}
+                busy={controller.busy}
+                discordBusy={controller.discordBusy}
+                communityBusy={controller.communityBusy}
+                connectDisabled={controller.connectDisabled}
+                inGuide={controller.view !== "connection"}
+                onOpenConnection={() => controller.setView("connection")}
+                onRestartDiscord={controller.handleRestartDiscord}
+                onDisconnect={controller.handleDisconnect}
+                health={controller.connectionHealth}
               />
-            )}
-          </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout" custom={controller.view === "connection" ? 1 : -1}>
+                {controller.view === "connection" ? (
+                  <motion.div key="connection" className="content-grid" custom={1} variants={viewVariants} initial="initial" animate="enter" exit="exit">
+                    <div className="mode-column">
+                      <nav className="mode-switch" aria-label="روش اتصال">
+                        {([ ["personal", "کانفیگ شخصی"], ["community", "اتصال سریع رایگان"] ] as const).map(([id, label]) => (
+                          <button type="button" key={id} aria-pressed={controller.connectionMode === id} onClick={() => controller.setConnectionMode(id)}>
+                            {controller.connectionMode === id && <motion.span className="selected-mode" layoutId="selected-mode" transition={transitions.layout} />}
+                            <span>{label}</span>
+                          </button>
+                        ))}
+                      </nav>
 
-          <WorkspaceHeading />
-          <PrerequisitePanel status={controller.prerequisites} busy={controller.setupBusy} ready={controller.setupReady && !controller.setupError}
-            connectionBusy={controller.connected || controller.busy || Boolean(controller.communityBusy) || controller.updatePhase === "downloading" || controller.updatePhase === "installing"}
-            error={controller.setupError} notice={controller.setupNotice}
-            onCheck={controller.handleCheckPrerequisites} onInstall={controller.handleInstallPrerequisites} />
-          <ViewSwitch view={controller.view} onChange={changeView} />
-          {unreadRelease && <WhatsNewNotice onOpen={() => changeView("whatsNew")} onDismiss={dismissRelease} />}
-          <ConnectionStatus
-            appStatus={controller.appStatus}
-            mode={controller.connectionMode}
-            busy={controller.busy}
-            discordBusy={controller.discordBusy}
-            communityBusy={controller.communityBusy}
-            connectDisabled={controller.connectDisabled}
-            inGuide={controller.view !== "connection"}
-            onOpenConnection={() => controller.setView("connection")}
-            onRestartDiscord={controller.handleRestartDiscord}
-            onDisconnect={controller.handleDisconnect}
-            health={controller.connectionHealth}
-          />
-          {controller.view === "connection" && <ConnectionHealthPanel
-            health={controller.connectionHealth} connected={controller.connected}
-            busy={controller.healthBusy || controller.busy || Boolean(controller.communityBusy)}
-            error={controller.healthError} onCheck={controller.handleHealthCheck} />}
-
-          <AnimatePresence initial={false} mode="popLayout" custom={controller.view === "connection" ? 1 : -1}>
-            {controller.view === "connection" ? (
-              <motion.div key="connection" className="content-grid" custom={1} variants={viewVariants} initial="initial" animate="enter" exit="exit">
-                <div className="mode-column">
-                  <nav className="mode-switch" aria-label="روش اتصال">
-                    {([ ["personal", "کانفیگ شخصی"], ["community", "اتصال سریع رایگان"] ] as const).map(([id, label]) => (
-                      <button type="button" key={id} aria-pressed={controller.connectionMode === id} onClick={() => controller.setConnectionMode(id)}>
-                        {controller.connectionMode === id && <motion.span className="selected-mode" layoutId="selected-mode" transition={transitions.layout} />}
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </nav>
-
-                  <AnimatePresence initial={false} mode="popLayout" custom={controller.connectionMode === "personal" ? -1 : 1}>
-                    {controller.connectionMode === "personal" ? (
-                      <motion.div key="personal" className="mode-panel" custom={-1} variants={panelVariants} initial="initial" animate="enter" exit="exit">
-                        <PersonalConnectionPanel
-                          profile={controller.profile}
-                          loading={controller.loading}
-                          busy={controller.busy}
-                          connected={controller.connected}
-                          remember={controller.remember}
-                          saved={controller.saved}
-                          notice={controller.notice}
-                          showSecret={controller.showSecret}
-                          configInvalid={controller.configInvalid}
-                          hasConfig={controller.hasConfig}
-                          unsupportedConfig={controller.unsupportedConfig}
-                          detectedProtocol={controller.detectedProtocol}
-                          confirmForget={controller.confirmForget}
-                          onSubmit={controller.handleSubmit}
-                          onProfileChange={controller.updateProfile}
-                          onConfigBlur={() => controller.setConfigTouched(true)}
-                          onShowSecretChange={controller.setShowSecret}
-                          onRememberChange={controller.handleRememberChange}
-                          onSave={controller.handleSave}
-                          onConfirmForgetChange={controller.setConfirmForget}
-                          onForget={controller.handleForget}
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div key="community" className="mode-panel" custom={1} variants={panelVariants} initial="initial" animate="enter" exit="exit">
-                        <CommunityConnectionPanel
-                          community={controller.community}
-                          results={controller.communityResults}
-                          busy={controller.communityBusy}
-                          error={controller.communityError}
-                          warningChecked={controller.warningChecked}
-                          sourceDraft={controller.sourceDraft}
-                          connected={controller.connected}
-                          onSubmit={controller.handleCommunityConnect}
-                          onWarningChecked={controller.setWarningChecked}
-                          onAcknowledge={controller.acknowledgeCommunity}
-                          onRefresh={controller.handleCommunityRefresh}
-                          onScan={controller.handleCommunityScan}
-                          onCancelScan={controller.cancelCommunityScan}
-                          onFailoverChange={controller.updateFailover}
-                          onReplaceSources={controller.replaceSources}
-                          onSourceDraftChange={controller.setSourceDraft}
-                          onAddSource={controller.addSource}
-                          onClearData={controller.handleClearCommunityData}
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <ConnectionSidebar appStatus={controller.appStatus} />
-              </motion.div>
-            ) : (
-              <motion.div key={controller.view} custom={-1} variants={viewVariants} initial="initial" animate="enter" exit="exit" className="guide-view-wrap">
-                {controller.view === "guide" ? <GuideView /> : <WhatsNewView />}
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <AppFooter />
+                      <AnimatePresence initial={false} mode="popLayout" custom={controller.connectionMode === "personal" ? -1 : 1}>
+                        {controller.connectionMode === "personal" ? (
+                          <motion.div key="personal" className="mode-panel" custom={-1} variants={panelVariants} initial="initial" animate="enter" exit="exit">
+                            <PersonalConnectionPanel
+                              profile={controller.profile}
+                              loading={controller.loading}
+                              busy={controller.busy}
+                              connected={controller.connected}
+                              remember={controller.remember}
+                              saved={controller.saved}
+                              notice={controller.notice}
+                              showSecret={controller.showSecret}
+                              configInvalid={controller.configInvalid}
+                              hasConfig={controller.hasConfig}
+                              unsupportedConfig={controller.unsupportedConfig}
+                              detectedProtocol={controller.detectedProtocol}
+                              confirmForget={controller.confirmForget}
+                              onSubmit={controller.handleSubmit}
+                              onProfileChange={controller.updateProfile}
+                              onConfigBlur={() => controller.setConfigTouched(true)}
+                              onShowSecretChange={controller.setShowSecret}
+                              onRememberChange={controller.handleRememberChange}
+                              onSave={controller.handleSave}
+                              onConfirmForgetChange={controller.setConfirmForget}
+                              onForget={controller.handleForget}
+                            />
+                          </motion.div>
+                        ) : (
+                          <motion.div key="community" className="mode-panel" custom={1} variants={panelVariants} initial="initial" animate="enter" exit="exit">
+                            <CommunityConnectionPanel
+                              community={controller.community}
+                              results={controller.communityResults}
+                              busy={controller.communityBusy}
+                              error={controller.communityError}
+                              warningChecked={controller.warningChecked}
+                              sourceDraft={controller.sourceDraft}
+                              connected={controller.connected}
+                              onSubmit={controller.handleCommunityConnect}
+                              onWarningChecked={controller.setWarningChecked}
+                              onAcknowledge={controller.acknowledgeCommunity}
+                              onRefresh={controller.handleCommunityRefresh}
+                              onScan={controller.handleCommunityScan}
+                              onCancelScan={controller.cancelCommunityScan}
+                              onFailoverChange={controller.updateFailover}
+                              onReplaceSources={controller.replaceSources}
+                              onSourceDraftChange={controller.setSourceDraft}
+                              onAddSource={controller.addSource}
+                              onClearData={controller.handleClearCommunityData}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <ConnectionSidebar appStatus={controller.appStatus} />
+                  </motion.div>
+                ) : (
+                  <motion.div key={controller.view} custom={-1} variants={viewVariants} initial="initial" animate="enter" exit="exit" className="guide-view-wrap">
+                    {controller.view === "guide" ? <GuideView /> : <WhatsNewView />}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {controller.view === "connection" && <ConnectionHealthPanel
+                health={controller.connectionHealth} connected={controller.connected}
+                busy={controller.healthBusy || controller.busy || Boolean(controller.communityBusy)}
+                error={controller.healthError} onCheck={controller.handleHealthCheck} />}
+              <AppFooter />
+            </div>
+          </div>
         </main>
       </LayoutGroup>
     </MotionConfig>

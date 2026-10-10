@@ -1,8 +1,8 @@
 import { motion } from "motion/react";
 import type { UpdateProgress } from "../updater";
 import { collapseVariants, transitions } from "../motion";
-import { SpinnerIcon } from "./Icons";
-import brandIcon from "../../assets/disroute-logo.svg";
+import { InterfaceIcon, SpinnerIcon } from "./Icons";
+import type { Appearance } from "../appearance";
 import { APP_VERSION } from "../releaseNotes";
 import { ReleasePreview } from "./WhatsNew";
 
@@ -13,19 +13,20 @@ interface TopBarProps {
   updatePhase: UpdatePhase;
   onCheckUpdates: () => void;
   onHideToTray: () => void;
+  appearance?: Appearance;
+  onToggleAppearance?: () => void;
 }
 
-export function TopBar({ updatePhase, onCheckUpdates, onHideToTray }: TopBarProps) {
+export function TopBar({ updatePhase, onCheckUpdates, onHideToTray, appearance = "light", onToggleAppearance }: TopBarProps) {
   const checking = updatePhase === "checking";
   const updating = updatePhase === "downloading" || updatePhase === "installing";
 
   return (
     <header className="topbar">
       <div className="brand-lockup">
-        <div className="brand-mark"><img src={brandIcon} alt="" width="42" height="42" /></div>
         <div>
           <h1>DisRoute</h1>
-          <p>مسیر مستقل Discord</p>
+          <p dir="ltr">Discord connection utility</p>
         </div>
       </div>
       <div className="header-actions">
@@ -34,19 +35,26 @@ export function TopBar({ updatePhase, onCheckUpdates, onHideToTray }: TopBarProp
           className="text-button update-check-button"
           type="button"
           disabled={checking || updating}
+          aria-label={checking ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}
           aria-busy={checking || updating}
           onClick={onCheckUpdates}
         >
-          {(checking || updating) && <SpinnerIcon />}
+          {checking || updating ? <SpinnerIcon /> : <InterfaceIcon name="update" />}
           <span>{checking ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}</span>
         </button>
+        {onToggleAppearance && <button className="text-button icon-button appearance-button" type="button"
+          aria-label={appearance === "light" ? "استفاده از ظاهر تیره" : "استفاده از ظاهر روشن"}
+          title={appearance === "light" ? "ظاهر تیره" : "ظاهر روشن"} onClick={onToggleAppearance}>
+          <InterfaceIcon name={appearance === "light" ? "moon" : "sun"} />
+        </button>}
         <button
           className="text-button tray-button"
           type="button"
           title="پنجره بسته می‌شود و برنامه در System tray فعال می‌ماند"
+          aria-label="Minimize to system tray"
           onClick={onHideToTray}
         >
-          Minimize to system tray
+          <InterfaceIcon name="tray" /><span>Minimize</span>
         </button>
       </div>
     </header>
@@ -95,14 +103,15 @@ export function UpdateNotice({ phase, info, progress, error, onInstall, onClose 
   );
 }
 
-export function WorkspaceHeading() {
+export function WorkspaceHeading({ view = "connection" }: { view?: AppView }) {
   return (
     <div className="workspace-heading">
       <div>
-        <h2>کنترل اتصال</h2>
-        <p>Discord از مسیر پروکسی عبور می‌کند؛ بقیهٔ برنامه‌ها مستقیم می‌مانند.</p>
+        <span className="workspace-eyebrow" dir="ltr">{view === "connection" ? "CONNECTION" : view === "guide" ? "GET STARTED" : "RELEASE NOTES"}</span>
+        <h2>{view === "connection" ? "کنترل اتصال" : view === "guide" ? "شروع کار با DisRoute" : "تغییرات برنامه"}</h2>
+        <p>{view === "connection" ? "Discord از مسیر پروکسی عبور می‌کند؛ بقیهٔ برنامه‌ها مستقیم می‌مانند." : view === "guide" ? "از آماده‌سازی تا اولین اتصال، قدم‌به‌قدم." : "امکانات و اصلاح‌های هر نسخه را اینجا ببینید."}</p>
       </div>
-      <span className="local-badge"><i /> مسیریابی انتخابی</span>
+      <span className="local-badge"><i aria-hidden="true" /> فقط Discord</span>
     </div>
   );
 }
@@ -113,7 +122,7 @@ export function ViewSwitch({ view, onChange }: { view: AppView; onChange: (view:
       {([ ["connection", "اتصال"], ["guide", "راهنمای شروع"], ["whatsNew", "تازه‌های نسخه"] ] as const).map(([id, label]) => (
         <button type="button" key={id} aria-pressed={view === id} onClick={() => onChange(id)}>
           {view === id && <motion.span className="selected-view" layoutId="selected-view" transition={transitions.layout} />}
-          <span>{label}</span>
+          <span className="navigation-label"><InterfaceIcon name={id} /><span>{label}</span></span>
         </button>
       ))}
     </nav>
