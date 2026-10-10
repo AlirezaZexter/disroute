@@ -23,7 +23,14 @@
   --warning-soft: #fff8e9;
   --danger: #bd2837;
   --danger-soft: #fff0f1;
-  --glass: rgba(249, 251, 255, .8);
+  --glass: rgba(249, 251, 255, .56);
+  --glass-edge: rgba(255, 255, 255, .9);
+  --glass-sheen: rgba(255, 255, 255, .72);
+  --glass-shade: rgba(115, 148, 185, .1);
+  --glass-border: rgba(109, 139, 178, .22);
+  --glass-selected: rgba(255, 255, 255, .65);
+  --ambient-blue: rgba(121, 169, 238, .3);
+  --ambient-mint: rgba(116, 194, 175, .18);
   --selected: #fff;
   --shadow: 0 2px 5px rgba(31, 45, 71, .035), 0 12px 30px rgba(31, 45, 71, .035);
   --control-shadow: 0 1px 4px rgba(31, 45, 71, .12);
@@ -50,14 +57,26 @@
   --warning-soft: #3c3220;
   --danger: #ff9aa4;
   --danger-soft: #422a32;
-  --glass: rgba(24, 30, 41, .9);
+  --glass: rgba(24, 33, 48, .64);
+  --glass-edge: rgba(218, 234, 255, .23);
+  --glass-sheen: rgba(200, 225, 255, .12);
+  --glass-shade: rgba(0, 0, 0, .18);
+  --glass-border: rgba(158, 190, 230, .23);
+  --glass-selected: rgba(148, 184, 232, .18);
+  --ambient-blue: rgba(51, 112, 192, .34);
+  --ambient-mint: rgba(49, 128, 118, .17);
   --selected: #303b4e;
   --shadow: 0 2px 5px rgba(0, 0, 0, .05), 0 12px 30px rgba(0, 0, 0, .08);
   --control-shadow: 0 1px 4px rgba(0, 0, 0, .2);
 }
 :root { color: var(--text); background: var(--bg); }
 :root:has(.shell[data-appearance="dark"]) { color-scheme: dark; --bg: #11151d; }
-.shell { width: 100%; min-height: 100dvh; margin: 0; padding: 0; color: var(--text); background: var(--bg); }
+.shell {
+  width: 100%; min-height: 100dvh; margin: 0; padding: 0; color: var(--text);
+  background: radial-gradient(ellipse at 95% 0%, var(--ambient-blue), transparent 55%),
+    radial-gradient(ellipse at 0% 65%, var(--ambient-mint), transparent 55%), var(--bg);
+  background-size: 100% 100vh; background-attachment: fixed;
+}
 .topbar {
   position: sticky; top: 0; z-index: 5; height: var(--toolbar-height); min-height: var(--toolbar-height); padding: 12px 28px;
   margin: 0; border-bottom: 1px solid var(--border); background: var(--glass);
@@ -199,6 +218,48 @@ label small, .privacy-note, .requirement p { font-size: 13px; }
 .app-footer { color: var(--muted); font-size: 13px; margin-top: 24px; gap: 12px; flex-wrap: wrap; }
 .creator-credit { color: var(--muted); font-family: var(--font-latin); }
 
+/* Glass lives on interaction surfaces; text fields and warning copy stay opaque. */
+.topbar, .app-navigation, .status-card {
+  background: linear-gradient(125deg, var(--glass-sheen), transparent 36%, var(--glass-shade)), var(--glass);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  border-color: var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-edge), inset 1px 0 0 var(--glass-edge), 0 8px 24px rgba(16, 37, 66, .045);
+}
+.status-card { position: relative; }
+.status-card::before {
+  content: ""; position: absolute; inset: 1px; border-radius: inherit; pointer-events: none;
+  border: 1px solid transparent; border-top-color: var(--glass-edge); border-bottom-color: var(--glass-shade);
+}
+.status-error { border-inline-start-color: var(--danger); }
+.status-connecting { border-inline-start-color: var(--warning); }
+.header-actions .text-button { background: var(--glass-selected); border-color: var(--glass-border); box-shadow: inset 0 1px 0 var(--glass-edge); }
+.header-actions .text-button:hover:not(:disabled) { background: var(--glass-selected); border-color: var(--primary); }
+.mode-switch, .appearance-switch {
+  background: var(--glass-shade); border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 3px var(--glass-shade), 0 1px 0 var(--glass-edge);
+}
+.selected-mode, .selected-view, .selected-appearance {
+  background: linear-gradient(150deg, var(--glass-sheen), transparent 55%), var(--glass-selected);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-edge), inset 0 -1px 2px var(--glass-shade), 0 3px 9px var(--glass-shade);
+}
+.selected-view { border-radius: 12px; }
+.appearance-switch { display: flex; align-items: center; padding: 3px; border-radius: 99px; }
+.header-actions .appearance-button {
+  position: relative; min-width: 64px; min-height: 32px; padding: 4px 9px;
+  border: 0; border-radius: 99px; background: transparent; box-shadow: none; color: var(--muted);
+}
+.header-actions .appearance-button:hover:not(:disabled) { background: transparent; }
+.header-actions .appearance-button[aria-pressed="true"] { color: var(--text); }
+.selected-appearance { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
+.appearance-label { position: relative; z-index: 1; display: flex; align-items: center; gap: 5px; }
+.appearance-label .interface-icon { width: 16px; height: 16px; }
+.status-controls .button-primary {
+  background: linear-gradient(165deg, rgba(255, 255, 255, .16), transparent 55%), #0066d6;
+  border-color: rgba(0, 76, 170, .45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 3px 9px rgba(0, 80, 185, .17);
+}
+
 @media (min-width: 1400px) { .workspace-main { padding: 36px 40px 28px; } }
 @media (max-width: 1050px) {
   .app-workspace { grid-template-columns: 166px minmax(0, 1fr); }
@@ -231,6 +292,8 @@ label small, .privacy-note, .requirement p { font-size: 13px; }
   .topbar p, .version, .tray-button span, .update-check-button span { display: none; }
   .header-actions { gap: 5px; }
   .header-actions .text-button { width: 40px; padding: 0; }
+  .header-actions .appearance-button { width: 34px; min-width: 34px; }
+  .appearance-label > span { display: none; }
   .update-check-button { position: relative; }
   .app-navigation { padding-inline: 12px; }
   .view-switch { gap: 3px; justify-content: space-between; }
@@ -255,5 +318,14 @@ label small, .privacy-note, .requirement p { font-size: 13px; }
   .app-footer > span:first-child { width: 100%; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .topbar, .app-navigation { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .shell { background: var(--bg); }
+  .topbar, .app-navigation, .status-card { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .selected-mode, .selected-view, .selected-appearance, .header-actions .text-button { background: var(--selected); }
+  .header-actions .appearance-button { background: transparent; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar, .app-navigation, .status-card { background: var(--surface); }
+}
+@media (forced-colors: active) {
+  .selected-mode, .selected-view, .selected-appearance { background: Canvas; border: 2px solid Highlight; box-shadow: none; }
 }

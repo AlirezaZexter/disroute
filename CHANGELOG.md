@@ -6,6 +6,8 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ### Changed
 
+- Liquid Glass chrome with translucent blurred surfaces, reflective edges and shared-layout selection; explicit light/dark controls retain the saved appearance preference. Reduced-transparency and unsupported-filter fallbacks keep controls opaque and readable.
+
 - Apple-inspired silver desktop interface with a right-side workspace navigation, light/dark appearances, readable Persian supporting text and restrained shared-layout transitions.
 - Replaced the in-app header image with a text wordmark; desktop and taskbar icon assets are unchanged.
 - Moved live connection health below configuration controls. Existing Discord-only routing, proxy lifecycle, community source behavior and updater are unchanged.

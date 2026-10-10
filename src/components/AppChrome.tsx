@@ -42,11 +42,16 @@ export function TopBar({ updatePhase, onCheckUpdates, onHideToTray, appearance =
           {checking || updating ? <SpinnerIcon /> : <InterfaceIcon name="update" />}
           <span>{checking ? "در حال بررسی…" : updating ? "در حال آپدیت…" : "بررسی آپدیت"}</span>
         </button>
-        {onToggleAppearance && <button className="text-button icon-button appearance-button" type="button"
-          aria-label={appearance === "light" ? "استفاده از ظاهر تیره" : "استفاده از ظاهر روشن"}
-          title={appearance === "light" ? "ظاهر تیره" : "ظاهر روشن"} onClick={onToggleAppearance}>
-          <InterfaceIcon name={appearance === "light" ? "moon" : "sun"} />
-        </button>}
+        {onToggleAppearance && <div className="appearance-switch" role="group" aria-label="ظاهر برنامه" dir="rtl">
+          {([ ["light", "روشن", "sun"], ["dark", "تیره", "moon"] ] as const).map(([id, label, icon]) => (
+            <button key={id} className="text-button appearance-button" type="button"
+              aria-label={`استفاده از ظاهر ${label}`} aria-pressed={appearance === id}
+              title={`ظاهر ${label}`} onClick={() => { if (appearance !== id) onToggleAppearance(); }}>
+              {appearance === id && <motion.span className="selected-appearance" layoutId="selected-appearance" transition={transitions.layout} />}
+              <span className="appearance-label"><InterfaceIcon name={icon} /><span>{label}</span></span>
+            </button>
+          ))}
+        </div>}
         <button
           className="text-button tray-button"
           type="button"

@@ -11,7 +11,9 @@ An Apple-inspired desktop utility, with Devigner's LiquidGlass as a reference fo
 - Persian: bundled Vazirmatn, 15px body, at least 13px supporting copy, 28px workspace title. Latin: system UI stack. Isolate mixed-script values.
 - 72px toolbar with text wordmark only. Right-side navigation at large desktop widths, horizontal navigation at compact widths. No broken header image.
 - Real connect control stays bound to the existing form. Keep configuration visible before live-health history. Routing explanation stays beside settings.
-- Two frosted surfaces maximum: toolbar and navigation. Remaining content is opaque for legibility and GPU cost.
+- Liquid Glass refinement: cool silver #f2f4f8, ice blue #d5e6ff and pale mint #dcefe9 behind translucent chrome; graphite #11151d and deep blue #203653 in dark mode. Keep Vazirmatn and the existing RTL layout.
+- Glass is concentrated in the toolbar, navigation, status surface and moving selectors: blurred backdrop, lit rim and inset reflections. Form fields and warnings remain solid. Static ambient color gives the material something to refract; no continuous animation or pointer tracking.
+- Explicit light/dark segmented control in the toolbar; its selection uses the same shared-layout motion as navigation. Respect reduced transparency and provide an opaque fallback when backdrop filtering is unsupported.
 - Blue shared-layout selection, short crossfades and existing reduced-motion support. No continuous decorative animation.
 - Keyboard-visible focus, clear pressed states, minimum 40px controls, explicit community warning, no color-only status.
 

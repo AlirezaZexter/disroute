@@ -13,12 +13,14 @@ describe("DisRoute dashboard", () => {
     await waitFor(() => expect(input).toBeEnabled());
     fireEvent.change(input, { target: { value: "trojan://example-password@example.com:443" } });
     fireEvent.click(screen.getByRole("button", { name: "استفاده از ظاهر تیره" }));
+    expect(screen.getByRole("button", { name: "استفاده از ظاهر تیره" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "استفاده از ظاهر تیره" }));
     expect(container.querySelector(".shell")).toHaveAttribute("data-appearance", "dark");
     expect(input).toHaveValue("trojan://example-password@example.com:443");
     expect(container.querySelector(".brand-lockup img")).not.toBeInTheDocument();
     unmount();
     render(<App />);
-    expect(screen.getByRole("button", { name: "استفاده از ظاهر روشن" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "استفاده از ظاهر تیره" })).toHaveAttribute("aria-pressed", "true");
   });
   it("opens release notes without resetting configuration or opening a modal", async () => {
     render(<App />);
