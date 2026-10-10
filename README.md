@@ -59,6 +59,7 @@ Community refresh shows fresh and cached sources separately. One unavailable cou
 
 ## Features
 
+- Persian RTL desktop interface with Liquid Glass controls, light/dark appearances and a saved appearance preference
 - Discord-only TCP and UDP process routing; unrelated programs stay on the direct connection
 - VLESS, VMess, Trojan, and Shadowsocks share links
 - TLS, Reality, TCP, WebSocket, HTTP/H2, HTTPUpgrade, and gRPC transports where compatible

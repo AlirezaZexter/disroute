@@ -28,4 +28,4 @@ Review personal, community acknowledgement, source manager, guide, release notes
 - Browser inspection: personal form, explicit community warning, source management, guide, release notes, current-version update notice, light/dark appearance. No horizontal document overflow at 1080, 760 or 375px.
 - No browser console errors in the inspected states. Appearance changes preserve unsaved input; blocked preference storage fails closed to light mode.
 - The preview does not operate the Windows network engine. No new live connection or elevated prerequisite installation was attempted for this visual-only change.
-- This is a local 0.5.9 design preview, not a published GitHub release. It retains the existing updater public key and source catalog.
+- Release preparation targets 0.5.9 and retains the existing updater public key and source catalog. Public updater artifacts are produced and signed by the existing GitHub release workflow.
