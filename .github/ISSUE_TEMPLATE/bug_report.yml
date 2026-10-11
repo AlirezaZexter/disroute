@@ -11,7 +11,7 @@ body:
     id: version
     attributes:
       label: DisRoute version
-      placeholder: 0.2.6
+      placeholder: Copy the version displayed in DisRoute
     validations:
       required: true
   - type: input
@@ -21,6 +21,31 @@ body:
       placeholder: Windows 11 24H2 x64
     validations:
       required: true
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation path
+      options:
+        - Setup installer (first installation)
+        - In-app update
+        - Setup installer over an older version
+        - Portable ZIP
+    validations:
+      required: true
+  - type: dropdown
+    id: connection_mode
+    attributes:
+      label: Connection mode
+      options:
+        - Personal configuration
+        - Community Quick Connect
+        - Not a connection issue
+    validations:
+      required: true
+  - type: input
+    id: previous_version
+    attributes:
+      label: Previous version (if updating)
   - type: dropdown
     id: area
     attributes:
@@ -34,6 +59,9 @@ body:
         - Tray or lifecycle
         - Interface
         - Packaging or setup
+        - In-app update or saved configuration
+        - Non-Discord traffic routing
+        - Community sources or testing
     validations:
       required: true
   - type: textarea
@@ -43,7 +71,7 @@ body:
       description: Use placeholders for every credential and server value.
       placeholder: |
         1. Start DisRoute as Administrator
-        2. Connect with a redacted VLESS link
+        2. Choose personal configuration or Community Quick Connect (do not paste the configuration)
         3. ...
     validations:
       required: true
@@ -66,5 +94,5 @@ body:
       options:
         - label: I removed credentials, server addresses, IP addresses, personal paths, and account identifiers.
           required: true
-        - label: I tested the newest available release in a fresh extracted directory.
+        - label: I checked the latest release and the troubleshooting guide (if the problem prevents updating, explain that above).
           required: true

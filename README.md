@@ -12,13 +12,15 @@
   [![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white)](https://github.com/AlirezaZexter/disroute/releases/latest)
   [![License: AGPL-3.0](https://img.shields.io/github/license/AlirezaZexter/disroute)](LICENSE)
 
-  [Download latest release](https://github.com/AlirezaZexter/disroute/releases/latest) · [راهنمای فارسی](docs/START-HERE-FA.txt) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Contributing](CONTRIBUTING.md)
+  [Download latest release](https://github.com/AlirezaZexter/disroute/releases/latest) · [شروع سریع فارسی](docs/QUICK-START-FA.md) · [راهنمای TXT](docs/START-HERE-FA.txt) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Contributing](CONTRIBUTING.md)
 </div>
 
 > [!IMPORTANT]
 > DisRoute is a preview. In-app updates are cryptographically signed, but the Windows installer is not Authenticode-signed and may trigger SmartScreen. DisRoute is not an anonymity, privacy, or leak-prevention product.
 
 ## What it solves
+
+Public beta preparation and remaining real-world verification gates are tracked in [Public beta readiness](docs/PUBLIC-BETA.md). Report installation, update and connection problems through the [bug report form](https://github.com/AlirezaZexter/disroute/issues/new?template=bug_report.yml), without posting configurations or credentials.
 
 A system-wide VPN can add latency to games and redirect unrelated traffic. DisRoute applies Windows per-process routing rules to Discord Stable, PTB, and Canary instead. It does not enable the Windows system proxy, replace the system DNS configuration, or create a default VPN route.
 

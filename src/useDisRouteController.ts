@@ -80,6 +80,7 @@ export function useDisRouteController() {
   const [updateProgress, setUpdateProgress] = useState<UpdateProgress>({ downloaded: 0 });
   const [updateError, setUpdateError] = useState("");
   const pendingUpdate = useRef<Update | null>(null);
+  const updateOperation = useRef(false);
   const [prerequisites, setPrerequisites] = useState<PrerequisiteStatus | null>(null);
   const [setupBusy, setSetupBusy] = useState<"" | "check" | "install">("check");
   const [setupError, setSetupError] = useState("");
@@ -216,7 +217,7 @@ export function useDisRouteController() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (setupBusy || !setupReady || setupError) return;
+    if (updateOperation.current || setupBusy || !setupReady || setupError) return;
     healthEpoch.current += 1;
     setHealthError("");
     setBusy(true);
@@ -265,6 +266,7 @@ export function useDisRouteController() {
   }
 
   async function handleCommunityRefresh() {
+    if (updateOperation.current) return;
     setCommunityBusy("refresh");
     setCommunityError("");
     setCommunityResults([]);
@@ -274,6 +276,7 @@ export function useDisRouteController() {
   }
 
   async function handleCommunityScan() {
+    if (updateOperation.current) return;
     setCommunityBusy("scan");
     setCommunityError("");
     setCommunityResults([]);
@@ -284,7 +287,7 @@ export function useDisRouteController() {
 
   async function handleCommunityConnect(event: FormEvent) {
     event.preventDefault();
-    if (setupBusy || !setupReady || setupError) return;
+    if (updateOperation.current || setupBusy || !setupReady || setupError) return;
     if (!community.acknowledgedWarning || communityBusy) return;
     healthEpoch.current += 1;
     setHealthError("");
@@ -331,6 +334,7 @@ export function useDisRouteController() {
   }
 
   async function handleCheckUpdates() {
+    if (updateOperation.current) return;
     setUpdatePhase("checking");
     setUpdateError("");
     try {
@@ -350,20 +354,30 @@ export function useDisRouteController() {
   }
 
   async function handleInstallUpdate() {
-    if (setupBusy === "install") return;
+    if (updateOperation.current || setupBusy || busy || communityBusy || discordBusy) return;
     const update = pendingUpdate.current;
     if (!update) return;
+    updateOperation.current = true;
     setUpdateProgress({ downloaded: 0 });
     setUpdateError("");
     setUpdatePhase("downloading");
     try {
       await downloadAndInstall(update, setUpdateProgress, async () => {
         setUpdatePhase("installing");
-        if (connected) setAppStatus(await disconnect());
+        // Failover can change the connection during the download. Read the
+        // backend immediately before installation, not an earlier render.
+        const latest = await getStatus();
+        if (latest.status === "connected" || latest.status === "connecting") {
+          healthEpoch.current += 1;
+          setConnectionHealth(null);
+          setAppStatus(await disconnect());
+        }
       });
     } catch (error) {
       setUpdateError(`دانلود یا نصب نسخه جدید ناموفق بود: ${String(error)}`);
       setUpdatePhase("error");
+    } finally {
+      updateOperation.current = false;
     }
   }
 
@@ -372,7 +386,7 @@ export function useDisRouteController() {
     setNotice("برای اعمال این انتخاب، ذخیره را بزنید.");
   }
 
-  const connectDisabled = Boolean(setupBusy || !setupReady || setupError) || (connectionMode === "personal"
+  const connectDisabled = updatePhase === "downloading" || updatePhase === "installing" || Boolean(setupBusy || !setupReady || setupError) || (connectionMode === "personal"
     ? loading || busy || !hasConfig || unsupportedConfig
     : communityBusy !== "" || !community.acknowledgedWarning || !community.sources.some((source) => source.enabled));
 

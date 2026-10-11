@@ -4,6 +4,18 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
+## [0.5.10] - 2026-10-11
+
+### Fixed
+
+- Prevent concurrent update downloads and starting a new personal/community connection during an update; read current backend connection state immediately before installation instead of relying on a stale render.
+
+### Added
+
+- Strict DPAPI persistence/legacy-profile verification, exact Discord-only routing assertions and updater lifecycle regression tests.
+- Disposable CI-runner NSIS install/upgrade smoke test with pinned previous release, packaged engine/bootstrapper checks and encrypted profile preservation.
+- Read-only selective-routing diagnostic, Persian quick-start/announcement copy, updated bug form and public beta verification ledger. Clean Windows driver setup and installed signed update/relaunch remain manual gates.
+
 ## [0.5.9] - 2026-10-10
 
 ### Changed

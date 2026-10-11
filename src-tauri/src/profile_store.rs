@@ -105,10 +105,8 @@ mod tests {
                 "vless://00000000-0000-4000-8000-000000000000@example.com:443?security=tls".into(),
         };
         assert!(load(&dir).unwrap().is_none());
-        if save(&dir, &profile).is_err() {
-            // Non-interactive Windows runners may not expose a DPAPI user token.
-            return;
-        }
+        // A missing DPAPI token is a failed verification, not a passing test.
+        save(&dir, &profile).expect("Windows DPAPI must support profile persistence");
         let encrypted = std::fs::read(dir.join("profile.dpapi")).unwrap();
         assert!(!String::from_utf8_lossy(&encrypted).contains("vless://"));
         assert_eq!(
@@ -118,6 +116,24 @@ mod tests {
         profile.name = "updated".into();
         save(&dir, &profile).unwrap();
         assert_eq!(load(&dir).unwrap().unwrap().name, "updated");
+        let before = std::fs::read(dir.join("profile.dpapi")).unwrap();
+        let invalid = ProxyProfile {
+            name: "".into(),
+            ..profile.clone()
+        };
+        assert!(save(&dir, &invalid).is_err());
+        assert_eq!(std::fs::read(dir.join("profile.dpapi")).unwrap(), before);
+        let legacy = serde_json::json!({"name": "legacy", "vlessLink": profile.config_link});
+        std::fs::write(
+            dir.join("profile.dpapi"),
+            protect(&serde_json::to_vec(&legacy).unwrap(), false).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(load(&dir).unwrap().unwrap().name, "legacy");
+        assert_eq!(
+            load(&dir).unwrap().unwrap().config_link,
+            profile.config_link
+        );
         std::fs::write(dir.join("profile.dpapi"), b"corrupt").unwrap();
         assert!(load(&dir).is_err());
         forget(&dir).unwrap();

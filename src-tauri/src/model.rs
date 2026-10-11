@@ -592,10 +592,18 @@ mod tests {
     fn generated_config_routes_only_discord_variants() {
         let config = profile().proxifyre_config();
         let apps = config["proxies"][0]["appNames"].as_array().unwrap();
-        assert!(apps.iter().all(|name| {
-            let name = name.as_str().unwrap();
-            name.starts_with("Discord") || name == "\\Discord\\Update.exe"
-        }));
+        assert_eq!(
+            apps,
+            serde_json::json!([
+                "Discord.exe",
+                "DiscordCanary.exe",
+                "DiscordPTB.exe",
+                "\\Discord\\Update.exe"
+            ])
+            .as_array()
+            .unwrap()
+        );
+        assert_eq!(config["proxies"].as_array().unwrap().len(), 1);
         assert_eq!(
             config["proxies"][0]["supportedProtocols"],
             serde_json::json!(["TCP", "UDP"])
@@ -623,6 +631,13 @@ mod tests {
                 candidate.sing_box_config().unwrap()["route"]["final"],
                 OUTBOUND_TAG
             );
+            assert_eq!(candidate.proxifyre_config(), profile().proxifyre_config());
+            let config = candidate.sing_box_config().unwrap();
+            assert_eq!(config["inbounds"].as_array().unwrap().len(), 1);
+            assert_eq!(config["inbounds"][0]["type"], "mixed");
+            assert_eq!(config["inbounds"][0]["listen"], "127.0.0.1");
+            assert_eq!(config["inbounds"][0]["set_system_proxy"], false);
+            assert!(config.get("dns").is_none());
         }
     }
 

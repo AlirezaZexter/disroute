@@ -2,6 +2,14 @@
 
 Run `npm run check` for frontend tests, TypeScript/build checks and Rust unit tests.
 
+## 0.5.10 release preparation (2026-10-11)
+
+- 48 frontend tests, 2 publication tests and 52 Rust tests pass locally. The DPAPI test now fails instead of silently returning when account protection is unavailable; it passed under the actual Windows user token outside the restricted execution sandbox.
+- New updater tests reproduce and cover duplicate download/connect races and stale connection state before installation, with no configuration deletion. Exact Discord process allowlists and loopback/no-TUN/no-system-proxy invariants are asserted for all four supported protocols.
+- CI now builds a real unsigned NSIS test artifact, installs pinned public 0.5.9 and upgrades it on the disposable runner; engine/bootstrapper hashes and the dummy encrypted profile's bytes/decryption are checked. This is not proof of clean Windows driver setup or an installed signed updater relaunch. Wait for this job to pass before release.
+- Maintainer reports successful multi-person voice and streaming tests. The report does not identify builds/network types and is not a universal availability guarantee.
+- See [public beta readiness](PUBLIC-BETA.md) for clean Windows, installed updater and live routing gates. The working elevated app and existing drivers were not stopped or reinstalled for these checks.
+
 ## 0.5.8 local verification (2026-10-10)
 
 - `npm run check`: 40 frontend tests, 2 publication tests, 52 Rust tests and the
@@ -113,4 +121,4 @@ The signed NSIS installer, updater signature, `latest.json`, and portable packag
 - Au1rxx Netherlands live feed: 77 accepted configurations, 12 working Discord HTTPS paths; best observed connection time 386 ms. This is a point-in-time observation, not a performance promise.
 - Radikal's feed yielded no working paths on the same network during an earlier scan; source availability varies.
 
-The manual Discord account/voice/streaming session is not covered by these tests. UDP DNS reachability is reported separately and does not guarantee media quality. Cancellation is cooperative between bounded operations. Windows DPAPI tests may return early in non-interactive environments without a usable user token; manual installed-app save/restore should be checked under the actual Windows account.
+The manual Discord account/voice/streaming session is not covered by these tests. UDP DNS reachability is reported separately and does not guarantee media quality. Cancellation is cooperative between bounded operations. Windows DPAPI tests require a usable user token and fail when unavailable; manual installed-app save/restore should also be checked under the actual Windows account.

@@ -28,4 +28,24 @@ describe("updater download", () => {
     expect(beforeInstall).not.toHaveBeenCalled();
     expect(install).not.toHaveBeenCalled();
   });
+
+  it('does not install when preparing the connection shutdown fails', async () => {
+    const install = vi.fn();
+    const update = { download: vi.fn().mockResolvedValue(undefined), install } as unknown as Update;
+    await expect(downloadAndInstall(update, vi.fn(), async () => { throw new Error('shutdown failed'); })).rejects.toThrow('shutdown failed');
+    expect(install).not.toHaveBeenCalled();
+  });
+
+  it('reports byte counts without inventing a percentage when the server omits its size', async () => {
+    const progress = vi.fn();
+    const update = {
+      download: async (report: (event: DownloadEvent) => void) => {
+        report({ event: 'Started', data: {} });
+        report({ event: 'Progress', data: { chunkLength: 400 } });
+        report({ event: 'Finished' });
+      }, install: vi.fn(),
+    } as unknown as Update;
+    await downloadAndInstall(update, progress, vi.fn());
+    expect(progress).toHaveBeenLastCalledWith(expect.objectContaining({ downloaded: 400, total: undefined, percent: undefined }));
+  });
 });

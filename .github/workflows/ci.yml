@@ -34,3 +34,15 @@ jobs:
           $env:DISROUTE_TEST_ENGINE = (Resolve-Path src-tauri/resources/engine/sing-box.exe).Path
           cargo test --manifest-path src-tauri/Cargo.toml isolated_engine_authentication_and_cleanup -- --ignored
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build actual installer without release signing
+        run: npm run tauri -- build --config src-tauri/tauri.ci.conf.json --bundles nsis --features custom-protocol
+      - name: Exercise real install and upgrade on disposable runner
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          ./scripts/verify-installed-upgrade.ps1 -Installer "src-tauri/target/release/bundle/nsis/DisRoute_${version}_x64-setup.exe"
+      - name: Retain install-test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-smoke-test
+          path: src-tauri/target/release/bundle/nsis/*.exe
