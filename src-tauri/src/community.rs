@@ -486,20 +486,20 @@ fn snapshot_from_state(state: CommunityState, now: u64) -> CommunitySnapshot {
 }
 
 fn initialize_sources(state: &mut CommunityState) -> Result<(), String> {
-    if !state.defaults_initialized || state.source_catalog_version < 2 {
+    if !state.defaults_initialized || state.source_catalog_version < 3 {
         let defaults: Vec<CommunitySource> =
             serde_json::from_str(include_str!("../../docs/community-sources.json"))
                 .map_err(|_| "فهرست منابع پیش‌فرض معتبر نیست.")?;
         for source in defaults {
             source.validate()?;
-            // Existing users keep removed/disabled original feeds. Only the
-            // newly introduced regional/stability feeds migrate once.
-            if state.defaults_initialized
-                && !matches!(
-                    source.id.as_str(),
-                    "au1rxx-tr" | "au1rxx-fr" | "au1rxx-ae" | "au1rxx-stable"
-                )
-            {
+            // Add each catalog generation once. Never resurrect removed feeds
+            // or overwrite a user-edited/disabled source with the same id.
+            let introduced_in = match source.id.as_str() {
+                "au1rxx-tr" | "au1rxx-fr" | "au1rxx-ae" | "au1rxx-stable" => 2,
+                "pulse-verified" | "radikal-fast" => 3,
+                _ => 1,
+            };
+            if state.defaults_initialized && introduced_in <= state.source_catalog_version.max(1) {
                 continue;
             }
             if !state.sources.iter().any(|item| item.id == source.id) {
@@ -507,7 +507,7 @@ fn initialize_sources(state: &mut CommunityState) -> Result<(), String> {
             }
         }
         state.defaults_initialized = true;
-        state.source_catalog_version = 2;
+        state.source_catalog_version = 3;
     }
     Ok(())
 }
@@ -1022,6 +1022,13 @@ mod tests {
             healthy.len(),
             healthy.first().and_then(|item| item.median_latency_ms)
         );
+        let mut by_source = std::collections::BTreeMap::<&str, (usize, u64)>::new();
+        for result in &healthy {
+            let entry = by_source.entry(&result.source_id).or_insert((0, u64::MAX));
+            entry.0 += 1;
+            entry.1 = entry.1.min(result.median_latency_ms.unwrap_or(u64::MAX));
+        }
+        eprintln!("Working by source (count, best HTTPS ms): {by_source:?}");
         eprintln!(
             "Total duration {:?}; UDP working {}",
             started.elapsed(),
@@ -1058,7 +1065,7 @@ mod tests {
     fn default_sources_are_valid_and_removals_persist() {
         let mut state = CommunityState::default();
         initialize_sources(&mut state).unwrap();
-        assert_eq!(state.sources.len(), 8);
+        assert_eq!(state.sources.len(), 10);
         state.sources.clear();
         initialize_sources(&mut state).unwrap();
         assert!(state.sources.is_empty());
@@ -1075,7 +1082,7 @@ mod tests {
         disabled.enabled = false;
         state.sources.push(disabled);
         initialize_sources(&mut state).unwrap();
-        assert_eq!(state.sources.len(), 4);
+        assert_eq!(state.sources.len(), 6);
         assert!(
             !state
                 .sources
@@ -1085,6 +1092,27 @@ mod tests {
                 .enabled
         );
         assert!(!state.sources.iter().any(|s| s.id == "radikal-top100"));
+        state.sources.clear();
+        initialize_sources(&mut state).unwrap();
+        assert!(state.sources.is_empty());
+    }
+
+    #[test]
+    fn catalog_v3_adds_diverse_feeds_once_without_restoring_removed_sources() {
+        let mut state = CommunityState {
+            defaults_initialized: true,
+            source_catalog_version: 2,
+            ..Default::default()
+        };
+        let mut custom = source();
+        custom.id = "pulse-verified".into();
+        custom.enabled = false;
+        state.sources.push(custom.clone());
+        initialize_sources(&mut state).unwrap();
+        assert_eq!(state.sources.len(), 2);
+        assert!(state.sources.iter().any(|s| s.id == "radikal-fast"));
+        assert_eq!(state.sources[0].location, custom.location);
+        assert!(!state.sources[0].enabled);
         state.sources.clear();
         initialize_sources(&mut state).unwrap();
         assert!(state.sources.is_empty());

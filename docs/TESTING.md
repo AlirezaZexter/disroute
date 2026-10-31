@@ -2,7 +2,16 @@
 
 Run `npm run check` for frontend tests, TypeScript/build checks and Rust unit tests.
 
-## 0.5.10 release preparation (2026-10-11)
+## 0.5.10 release preparation
+
+Follow-up local verification on 2026-10-31 (not a new CI/release claim):
+
+- 48 React tests, 4 Node script tests (including two light/dark contrast checks), 53 Rust tests and the production frontend build passed. The actual isolated sing-box authentication/failure/cleanup test passed separately.
+- Regression tests reproduce then cover slow-but-stable shortlist termination and catalog-v3 migration without resurrecting deleted sources or overwriting edited/disabled entries.
+- The real app's light UI and both-theme component fixtures were inspected at desktop/minimum-window sizes. Source attribution wrapping, source errors, cached-list warnings, update notes and disabled actions were checked; fixtures are explicitly labelled synthetic. No horizontal overflow or browser errors were found; the fixture deliberately respects reduced motion.
+- Live source/Discord HTTPS observations and their limits are recorded in [Community sources](COMMUNITY_SOURCES.md). These checks do not replace the clean-install, installed-updater or actual voice/streaming gates below.
+
+### Earlier verification (2026-10-11)
 
 - 48 frontend tests, 2 publication tests and 52 Rust tests pass locally. The DPAPI test now fails instead of silently returning when account protection is unavailable; it passed under the actual Windows user token outside the restricted execution sandbox.
 - New updater tests reproduce and cover duplicate download/connect races and stale connection state before installation, with no configuration deletion. Exact Discord process allowlists and loopback/no-TUN/no-system-proxy invariants are asserted for all four supported protocols.

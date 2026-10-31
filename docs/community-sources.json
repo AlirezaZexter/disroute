@@ -1,5 +1,27 @@
 [
   {
+    "id": "pulse-verified",
+    "name": "PulseConfigs · Verified",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/drmikecrypto/PulseConfigs/main/verified/configs_base64.txt",
+    "attribution": "drmikecrypto/PulseConfigs · public share links · MIT · https://github.com/drmikecrypto/PulseConfigs",
+    "enabled": true,
+    "refreshIntervalMinutes": 15,
+    "timeoutSeconds": 12,
+    "redistributionAuthorized": true
+  },
+  {
+    "id": "radikal-fast",
+    "name": "Radikal · Fast pool",
+    "kind": "subscription",
+    "location": "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/fast/configs.txt",
+    "attribution": "0xRadikal/Free-v2ray-Configs · public share links · MIT · https://github.com/0xRadikal/Free-v2ray-Configs",
+    "enabled": true,
+    "refreshIntervalMinutes": 15,
+    "timeoutSeconds": 12,
+    "redistributionAuthorized": true
+  },
+  {
     "id": "au1rxx-nl",
     "name": "Au1rxx · Netherlands",
     "kind": "subscription",

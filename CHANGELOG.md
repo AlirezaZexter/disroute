@@ -4,14 +4,17 @@ Notable changes to DisRoute are recorded here. The project follows Semantic Vers
 
 ## [Unreleased]
 
-## [0.5.10] - 2026-10-11
+## [0.5.10] - 2026-10-31
 
 ### Fixed
 
+- Improve light-theme text/control contrast, selected states, disabled buttons and long source attribution wrapping; add contrast regression tests for both themes.
+- Do not stop a community scan early merely because several slow endpoints are stable; the early shortlist now also requires measured median HTTPS latency at most 700 ms and jitter at most 150 ms. Existing total scheduling budget remains unchanged.
 - Prevent concurrent update downloads and starting a new personal/community connection during an update; read current backend connection state immediately before installation instead of relying on a stale render.
 
 ### Added
 
+- Authorized public PulseConfigs verified and Radikal Fast subscription feeds, with one-time catalog migration preserving user-edited, disabled and deleted sources.
 - Strict DPAPI persistence/legacy-profile verification, exact Discord-only routing assertions and updater lifecycle regression tests.
 - Disposable CI-runner NSIS install/upgrade smoke test with pinned previous release, packaged engine/bootstrapper checks and encrypted profile preservation.
 - Read-only selective-routing diagnostic, Persian quick-start/announcement copy, updated bug form and public beta verification ledger. Clean Windows driver setup and installed signed update/relaunch remain manual gates.

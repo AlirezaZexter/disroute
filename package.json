@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "node scripts/release-notes.mjs --check && tsc && vite build",
     "preview": "vite preview",
-    "test": "node --test scripts/release-notes.test.mjs && vitest run",
+    "test": "node --test scripts/*.test.mjs && vitest run",
     "test:watch": "vitest",
     "tauri": "tauri",
     "prepare:installer": "node scripts/prepare-installer.mjs",

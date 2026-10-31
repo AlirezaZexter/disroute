@@ -170,7 +170,10 @@ fn test_candidate(
 
 fn shortlist_ready(results: &[HealthResult], elapsed: Duration) -> bool {
     let stable = |r: &&HealthResult| {
-        r.working && r.failure_rate == 0.0 && r.jitter_ms.is_some_and(|j| j <= 250)
+        r.working
+            && r.failure_rate == 0.0
+            && r.jitter_ms.is_some_and(|j| j <= 150)
+            && r.median_latency_ms.is_some_and(|latency| latency <= 700)
     };
     let voice = results
         .iter()
@@ -499,6 +502,12 @@ mod tests {
             Duration::from_secs(2)
         ));
         assert!(shortlist_ready(&vec![no_udp; 4], Duration::from_secs(20)));
+        let mut slow = result.clone();
+        slow.median_latency_ms = Some(2_000);
+        assert!(
+            !shortlist_ready(&vec![slow; 4], Duration::from_secs(25)),
+            "Stable but slow nodes must not end the search for faster options"
+        );
         let mut unstable = result;
         unstable.failure_rate = 1.0 / 3.0;
         assert!(!shortlist_ready(
